@@ -1,22 +1,34 @@
 // Datos de ejemplo (en un caso real, esto vendría de una API)
-let tickets = JSON.parse(localStorage.getItem('tickets')) || [
-    {
-        id: 1,
-        subject: "Error al iniciar sesión",
-        description: "No puedo acceder a mi cuenta con mis credenciales",
-        status: "open",
-        priority: "high",
-        createdAt: new Date().toISOString()
-    },
-    {
-        id: 2,
-        subject: "Pregunta sobre facturación",
-        description: "Necesito ayuda para entender mi factura del mes pasado",
-        status: "progress",
-        priority: "medium",
-        createdAt: new Date(Date.now() - 86400000).toISOString()
+let tickets = [];
+
+// Función para cargar tickets desde localStorage
+function loadTickets() {
+    const storedTickets = localStorage.getItem('tickets');
+    if (storedTickets) {
+        tickets = JSON.parse(storedTickets);
+    } else {
+        // Datos iniciales si no hay nada en localStorage
+        tickets = [
+            {
+                id: 1,
+                subject: "Error al iniciar sesión",
+                description: "No puedo acceder a mi cuenta con mis credenciales",
+                status: "open",
+                priority: "high",
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: 2,
+                subject: "Pregunta sobre facturación",
+                description: "Necesito ayuda para entender mi factura del mes pasado",
+                status: "progress",
+                priority: "medium",
+                createdAt: new Date(Date.now() - 86400000).toISOString()
+            }
+        ];
+        saveTickets();
     }
-];
+}
 
 // Inicializar la aplicación cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
@@ -24,6 +36,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeApp() {
+    loadTickets(); // Cargar tickets desde localStorage
+    
     // Solo inicializar elementos si existen en la página actual
     if (document.getElementById('tickets-list')) {
         renderTickets();
@@ -152,7 +166,7 @@ function updateStats() {
     if (resolvedElement) resolvedElement.textContent = resolvedTickets;
 }
 
-// Manejar envío de nuevo ticket
+// Manejar envío de nuevo ticket desde el modal
 function handleTicketSubmit(e) {
     e.preventDefault();
     
@@ -187,16 +201,17 @@ function handleContactSubmit(e) {
     e.preventDefault();
     
     const name = document.getElementById('contact-name').value;
+    const email = document.getElementById('contact-email').value;
     const subject = document.getElementById('contact-subject').value;
     const description = document.getElementById('contact-description').value;
     const priority = document.getElementById('contact-priority').value;
     
     const newTicket = {
         id: Date.now(),
-        subject: `[Contacto] ${subject} - ${name}`,
-        description,
+        subject: `${subject} (${name} - ${email})`,
+        description: description,
         status: 'open',
-        priority,
+        priority: priority,
         createdAt: new Date().toISOString()
     };
     
@@ -208,7 +223,7 @@ function handleContactSubmit(e) {
     
     setTimeout(() => {
         window.location.href = 'index.html';
-    }, 2000);
+    }, 1500);
 }
 
 // Cambiar estado del ticket
