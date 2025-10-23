@@ -3,77 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FreshDesk Replica - Panel Principal</title>
+    <title>FreshDesk Replica - Inicio</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <header class="header">
-            <h1>🎯 Centro de Soporte</h1>
-            <nav class="nav">
-                <a href="index.html" class="nav-link active">Dashboard</a>
-                <a href="knowledge-base.html" class="nav-link">Base de Conocimiento</a>
-                <a href="contact.html" class="nav-link">Contactar Soporte</a>
-            </nav>
+            <h1>🎯 Sistema de Soporte</h1>
         </header>
 
-        <!-- Estadísticas Rápidas -->
-        <div class="stats-container">
-            <div class="stat-card">
-                <h3>Tickets Abiertos</h3>
-                <span id="open-tickets-count">0</span>
-            </div>
-            <div class="stat-card">
-                <h3>En Progreso</h3>
-                <span id="progress-tickets-count">0</span>
-            </div>
-            <div class="stat-card">
-                <h3>Resueltos</h3>
-                <span id="resolved-tickets-count">0</span>
-            </div>
-        </div>
+        <div class="login-container">
+            <div class="login-card">
+                <h2>Acceder al Sistema</h2>
+                
+                <div class="login-options">
+                    <div class="login-option" onclick="redirectToClientPortal()">
+                        <div class="option-icon">👤</div>
+                        <h3>Soy Cliente</h3>
+                        <p>Solicitar soporte y ver mis tickets</p>
+                        <button class="btn-primary">Acceder como Cliente</button>
+                    </div>
+                    
+                    <div class="login-option" onclick="redirectToAgentDashboard()">
+                        <div class="option-icon">🛠️</div>
+                        <h3>Soy Agente</h3>
+                        <p>Gestionar tickets y métricas</p>
+                        <button class="btn-secondary">Acceder como Agente</button>
+                    </div>
+                </div>
 
-        <!-- Filtros y Búsqueda -->
-        <div class="filters">
-            <input type="text" id="search-tickets" placeholder="Buscar tickets..." class="search-input">
-            <select id="status-filter" class="filter-select">
-                <option value="all">Todos los estados</option>
-                <option value="open">Abierto</option>
-                <option value="progress">En Progreso</option>
-                <option value="resolved">Resuelto</option>
-            </select>
-            <button onclick="createNewTicket()" class="btn-primary">+ Nuevo Ticket</button>
-        </div>
-
-        <!-- Lista de Tickets -->
-        <div class="tickets-container">
-            <h2>Tickets Recientes</h2>
-            <div id="tickets-list" class="tickets-list">
-                <!-- Los tickets se cargarán aquí dinámicamente -->
-            </div>
-        </div>
-
-        <!-- Modal para nuevo ticket (oculto inicialmente) -->
-        <div id="ticket-modal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal()">&times;</span>
-                <h3>Crear Nuevo Ticket</h3>
-                <form id="ticket-form">
-                    <input type="text" id="ticket-subject" placeholder="Asunto del ticket" required>
-                    <textarea id="ticket-description" placeholder="Descripción del problema..." rows="4" required></textarea>
-                    <select id="ticket-priority" required>
-                        <option value="">Seleccionar prioridad</option>
-                        <option value="low">Baja</option>
-                        <option value="medium">Media</option>
-                        <option value="high">Alta</option>
-                    </select>
-                    <button type="submit" class="btn-primary">Crear Ticket</button>
-                </form>
+                <div class="quick-links">
+                    <a href="knowledge-base.html">📚 Base de Conocimiento</a>
+                </div>
             </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        function redirectToClientPortal() {
+            window.location.href = 'client-portal.html';
+        }
+
+        function redirectToAgentDashboard() {
+            window.location.href = 'agent-dashboard.html';
+        }
+    </script>
 </body>
 </html>
