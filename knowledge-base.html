@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base de Conocimiento - FreshDesk Replica</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📚 Base de Conocimiento</h1>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Dashboard</a>
+                <a href="knowledge-base.html" class="nav-link active">Base de Conocimiento</a>
+                <a href="contact.html" class="nav-link">Contactar Soporte</a>
+            </nav>
+        </header>
+
+        <div class="filters">
+            <input type="text" placeholder="Buscar en artículos..." class="search-input">
+            <select class="filter-select">
+                <option value="all">Todas las categorías</option>
+                <option value="getting-started">Primeros Pasos</option>
+                <option value="billing">Facturación</option>
+                <option value="technical">Problemas Técnicos</option>
+            </select>
+        </div>
+
+        <div class="articles-grid">
+            <div class="article-card">
+                <span class="article-category">Primeros Pasos</span>
+                <h3>Guía de Inicio Rápido</h3>
+                <p>Aprende a configurar tu cuenta y comenzar a usar nuestra plataforma en menos de 10 minutos.</p>
+                <button class="btn-primary" style="margin-top: 1rem;">Leer Artículo</button>
+            </div>
+            
+            <div class="article-card">
+                <span class="article-category">Facturación</span>
+                <h3>¿Cómo cambiar mi plan?</h3>
+                <p>Guía completa para actualizar o downgradear tu plan de suscripción.</p>
+                <button class="btn-primary" style="margin-top: 1rem;">Leer Artículo</button>
+            </div>
+            
+            <div class="article-card">
+                <span class="article-category">Técnico</span>
+                <h3>Solución de problemas de conexión</h3>
+                <p>Pasos para diagnosticar y resolver problemas comunes de conectividad.</p>
+                <button class="btn-primary" style="margin-top: 1rem;">Leer Artículo</button>
+            </div>
+            
+            <div class="article-card">
+                <span class="article-category">Primeros Pasos</span>
+                <h3>Mejores prácticas de seguridad</h3>
+                <p>Recomendaciones para mantener tu cuenta segura y protegida.</p>
+                <button class="btn-primary" style="margin-top: 1rem;">Leer Artículo</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

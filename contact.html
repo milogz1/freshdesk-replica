@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contactar Soporte - FreshDesk Replica</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📞 Contactar Soporte</h1>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Dashboard</a>
+                <a href="knowledge-base.html" class="nav-link">Base de Conocimiento</a>
+                <a href="contact.html" class="nav-link active">Contactar Soporte</a>
+            </nav>
+        </header>
+
+        <div style="max-width: 600px; margin: 0 auto;">
+            <div class="article-card">
+                <h2>Crear un nuevo ticket de soporte</h2>
+                <p style="margin-bottom: 1.5rem; color: #7f8c8d;">
+                    Describe tu problema o pregunta en detalle y nuestro equipo te ayudará lo antes posible.
+                </p>
+                
+                <form id="contact-form">
+                    <div>
+                        <label for="contact-name">Nombre completo *</label>
+                        <input type="text" id="contact-name" required>
+                    </div>
+                    
+                    <div>
+                        <label for="contact-email">Email *</label>
+                        <input type="email" id="contact-email" required>
+                    </div>
+                    
+                    <div>
+                        <label for="contact-subject">Asunto *</label>
+                        <input type="text" id="contact-subject" required>
+                    </div>
+                    
+                    <div>
+                        <label for="contact-description">Descripción del problema *</label>
+                        <textarea id="contact-description" rows="6" required></textarea>
+                    </div>
+                    
+                    <div>
+                        <label for="contact-priority">Prioridad</label>
+                        <select id="contact-priority">
+                            <option value="low">Baja</option>
+                            <option value="medium" selected>Media</option>
+                            <option value="high">Alta</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem;">
+                        Enviar Ticket
+                    </button>
+                </form>
+            </div>
+            
+            <div class="article-card" style="margin-top: 2rem;">
+                <h3>📞 Otros métodos de contacto</h3>
+                <p><strong>Email:</strong> soporte@miempresa.com</p>
+                <p><strong>Teléfono:</strong> +1 (555) 123-4567</p>
+                <p><strong>Horario de atención:</strong> Lunes a Viernes, 9:00 - 18:00</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('contact-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('Ticket creado exitosamente. Serás redirigido al dashboard.');
+            window.location.href = 'index.html';
+        });
+    </script>
+</body>
+</html>
