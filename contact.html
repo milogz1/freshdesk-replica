@@ -72,8 +72,40 @@
     <script>
         document.getElementById('contact-form').addEventListener('submit', function(e) {
             e.preventDefault();
-            alert('Ticket creado exitosamente. Serás redirigido al dashboard.');
-            window.location.href = 'index.html';
+            
+            // Obtener los valores del formulario
+            const name = document.getElementById('contact-name').value;
+            const email = document.getElementById('contact-email').value;
+            const subject = document.getElementById('contact-subject').value;
+            const description = document.getElementById('contact-description').value;
+            const priority = document.getElementById('contact-priority').value;
+            
+            // Crear el nuevo ticket
+            const newTicket = {
+                id: Date.now(),
+                subject: `${subject} (${name} - ${email})`,
+                description: description,
+                status: 'open',
+                priority: priority,
+                createdAt: new Date().toISOString()
+            };
+            
+            // Obtener tickets existentes o inicializar array vacío
+            let tickets = JSON.parse(localStorage.getItem('tickets')) || [];
+            
+            // Agregar el nuevo ticket
+            tickets.unshift(newTicket);
+            
+            // Guardar en localStorage
+            localStorage.setItem('tickets', JSON.stringify(tickets));
+            
+            // Mostrar confirmación
+            alert('✅ Ticket creado exitosamente. Serás redirigido al dashboard.');
+            
+            // Redirigir al dashboard después de 1 segundo
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1000);
         });
     </script>
 </body>
