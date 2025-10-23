@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Cliente - FreshDesk</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>👤 Portal del Cliente</h1>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Inicio</a>
+                <a href="client-portal.html" class="nav-link active">Mi Portal</a>
+                <a href="knowledge-base.html" class="nav-link">Base de Conocimiento</a>
+            </nav>
+        </header>
+
+        <!-- Registro/Login de Cliente -->
+        <div id="client-auth-section" class="auth-section">
+            <div class="auth-card">
+                <h2>Acceder a Mi Cuenta</h2>
+                <div class="auth-tabs">
+                    <button class="tab-button active" onclick="openTab('login-tab')">Iniciar Sesión</button>
+                    <button class="tab-button" onclick="openTab('register-tab')">Registrarse</button>
+                </div>
+
+                <!-- Login -->
+                <div id="login-tab" class="tab-content active">
+                    <form id="login-form">
+                        <input type="email" id="login-email" placeholder="Correo electrónico" required>
+                        <button type="submit" class="btn-primary">Acceder a Mi Cuenta</button>
+                    </form>
+                    <p class="auth-note">¿Primera vez? <a href="#" onclick="openTab('register-tab')">Regístrate aquí</a></p>
+                </div>
+
+                <!-- Registro -->
+                <div id="register-tab" class="tab-content">
+                    <form id="register-form">
+                        <input type="text" id="register-name" placeholder="Nombre completo" required>
+                        <input type="email" id="register-email" placeholder="Correo electrónico" required>
+                        <input type="tel" id="register-phone" placeholder="WhatsApp" required>
+                        <button type="submit" class="btn-primary">Crear Cuenta</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard del Cliente (oculto inicialmente) -->
+        <div id="client-dashboard" class="client-dashboard" style="display: none;">
+            <!-- Bienvenida -->
+            <div class="welcome-section">
+                <h2>Bienvenido, <span id="client-name"></span></h2>
+                <button onclick="showNewTicketForm()" class="btn-primary">+ Nuevo Ticket</button>
+            </div>
+
+            <!-- Métricas del Cliente -->
+            <div class="client-metrics">
+                <div class="metric-card">
+                    <h3>Mis Tickets Abiertos</h3>
+                    <span id="client-open-tickets">0</span>
+                </div>
+                <div class="metric-card">
+                    <h3>En Progreso</h3>
+                    <span id="client-progress-tickets">0</span>
+                </div>
+                <div class="metric-card">
+                    <h3>Resueltos</h3>
+                    <span id="client-resolved-tickets">0</span>
+                </div>
+            </div>
+
+            <!-- Formulario Nuevo Ticket -->
+            <div id="new-ticket-form" class="ticket-form-section" style="display: none;">
+                <h3>Crear Nuevo Ticket</h3>
+                <form id="client-ticket-form">
+                    <input type="text" id="client-ticket-subject" placeholder="Asunto" required>
+                    <textarea id="client-ticket-description" placeholder="Describe tu problema..." rows="4" required></textarea>
+                    <select id="client-ticket-priority" required>
+                        <option value="">Seleccionar prioridad</option>
+                        <option value="low">Baja</option>
+                        <option value="medium">Media</option>
+                        <option value="high">Alta</option>
+                    </select>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Enviar Ticket</button>
+                        <button type="button" onclick="hideNewTicketForm()" class="btn-secondary">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tickets del Cliente -->
+            <div class="client-tickets">
+                <h3>Mis Tickets</h3>
+                <div id="client-tickets-list" class="tickets-list">
+                    <!-- Tickets del cliente cargados dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Funcionalidades específicas del portal de cliente
+        let currentClient = null;
+
+        function openTab(tabName) {
+            // Ocultar todos los tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+
+            // Mostrar tab seleccionado
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        function showNewTicketForm() {
+            document.getElementById('new-ticket-form').style.display = 'block';
+        }
+
+        function hideNewTicketForm() {
+            document.getElementById('new-ticket-form').style.display = 'none';
+            document.getElementById('client-ticket-form').reset();
+        }
+
+        // Inicializar portal de cliente
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeClientPortal();
+        });
+    </script>
+</body>
+</html>
