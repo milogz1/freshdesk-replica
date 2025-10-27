@@ -11,8 +11,7 @@
         <header class="header">
             <h1>📞 Contactar Soporte</h1>
             <nav class="nav">
-                <a href="index.html" class="nav-link">Dashboard</a>
-                <a href="knowledge-base.html" class="nav-link">Base de Conocimiento</a>
+                <a href="index.html" class="nav-link">Inicio</a>
                 <a href="contact.html" class="nav-link active">Contactar Soporte</a>
             </nav>
         </header>
@@ -73,39 +72,33 @@
         document.getElementById('contact-form').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            // Obtener los valores del formulario
             const name = document.getElementById('contact-name').value;
             const email = document.getElementById('contact-email').value;
             const subject = document.getElementById('contact-subject').value;
             const description = document.getElementById('contact-description').value;
             const priority = document.getElementById('contact-priority').value;
             
-            // Crear el nuevo ticket
+            // Obtener tickets existentes
+            let tickets = JSON.parse(localStorage.getItem('tickets')) || [];
+            
+            // Crear nuevo ticket
             const newTicket = {
                 id: Date.now(),
-                subject: `${subject} (${name} - ${email})`,
+                subject: subject,
                 description: description,
                 status: 'open',
                 priority: priority,
-                createdAt: new Date().toISOString()
+                clientName: name,
+                clientEmail: email,
+                createdAt: new Date().toISOString(),
+                agentId: null
             };
             
-            // Obtener tickets existentes o inicializar array vacío
-            let tickets = JSON.parse(localStorage.getItem('tickets')) || [];
-            
-            // Agregar el nuevo ticket
             tickets.unshift(newTicket);
-            
-            // Guardar en localStorage
             localStorage.setItem('tickets', JSON.stringify(tickets));
             
-            // Mostrar confirmación
-            alert('✅ Ticket creado exitosamente. Serás redirigido al dashboard.');
-            
-            // Redirigir al dashboard después de 1 segundo
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1000);
+            alert('Ticket creado exitosamente. Serás redirigido al inicio.');
+            window.location.href = 'index.html';
         });
     </script>
 </body>
