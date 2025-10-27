@@ -315,23 +315,38 @@ function showClientDashboard(client) {
     updateClientMetrics();
 }
 
-function renderAllTickets() {
+function renderAllTickets(ticketsToRender = tickets) {
     const ticketsList = document.getElementById('all-tickets-list');
-    if (!ticketsList) return;
-    
-    ticketsList.innerHTML = '';
-    
-    if (tickets.length === 0) {
-        ticketsList.innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 2rem;">No hay tickets en el sistema.</p>';
+    if (!ticketsList) {
+        console.error('❌ No se encontró el elemento all-tickets-list');
         return;
     }
     
-    tickets.forEach(ticket => {
-        const ticketElement = createAgentTicketElement(ticket);
-        ticketsList.appendChild(ticketElement);
+    console.log('🎫 Renderizando tickets:', ticketsToRender.length);
+    
+    ticketsList.innerHTML = '';
+    
+    if (ticketsToRender.length === 0) {
+        ticketsList.innerHTML = `
+            <div class="no-tickets">
+                <h3>📭 No se encontraron tickets</h3>
+                <p>No hay tickets que coincidan con los filtros aplicados</p>
+            </div>
+        `;
+        return;
+    }
+    
+    ticketsToRender.forEach(ticket => {
+        try {
+            const ticketElement = createAgentTicketElement(ticket);
+            ticketsList.appendChild(ticketElement);
+        } catch (error) {
+            console.error('Error al renderizar ticket:', ticket, error);
+        }
     });
+    
+    console.log('✅ Tickets renderizados correctamente');
 }
-
 function renderClientTickets() {
     if (!currentClient) return;
     
