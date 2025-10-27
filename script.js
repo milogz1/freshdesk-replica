@@ -1099,6 +1099,21 @@ function createAgentTicketElement(ticket) {
     return ticketDiv;
 }
 
+function debugClientData() {
+    console.log('=== DATOS DEL CLIENTE ===');
+    console.log('Cliente actual:', currentClient);
+    console.log('Todos los tickets:', tickets);
+    console.log('Todos los agentes:', agents);
+    console.log('Todos los clientes:', clients);
+    
+    if (currentClient) {
+        const clientTickets = tickets.filter(t => t.clientEmail === currentClient.email);
+        console.log('Tickets del cliente actual:', clientTickets);
+    }
+    
+    alert('Revisa la consola (F12) para ver los datos de depuración');
+}
+
 function forceReload() {
     console.log('🔄 Forzando recarga de datos...');
     initializeSampleData();
