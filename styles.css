@@ -901,3 +901,43 @@ input, textarea, select {
 .chat-message {
     animation: fadeIn 0.3s ease-out;
 }
+
+/* ===== ESTILOS PARA CHAT EN CLIENTE ===== */
+
+.client-chat-summary {
+    background: #e8f4fd;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    border-left: 4px solid #3498db;
+}
+
+.client-chat-summary h4 {
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+}
+
+.chat-messages-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.client-chat-message {
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.client-chat-message.agent {
+    background: #3498db;
+    color: white;
+    align-self: flex-start;
+}
+
+.client-chat-message.system {
+    background: #95a5a6;
+    color: white;
+    text-align: center;
+}
