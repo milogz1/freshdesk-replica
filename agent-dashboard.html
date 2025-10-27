@@ -81,94 +81,125 @@
     </div>
 
     <script src="script.js"></script>
-    <script>
-
-
-<!-- Modal para Chat y Resolución -->
-<div id="chat-modal" class="modal">
-    <div class="modal-content" style="max-width: 800px; height: 80vh; display: flex; flex-direction: column;">
-        <span class="close" onclick="closeChatModal()">&times;</span>
+<script>
+    // Inicializar dashboard de agente con verificación mejorada
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🔧 Inicializando dashboard de agente...');
         
-        <!-- Header del Chat -->
-        <div class="chat-header">
-            <h3>💬 Chat del Ticket</h3>
-            <div class="ticket-chat-info">
-                <strong id="chat-ticket-subject"></strong>
-                <span class="ticket-status" id="chat-ticket-status"></span>
-            </div>
-        </div>
+        // Verificar que el usuario esté autenticado como agente
+        const currentAgent = getCurrentAgent();
+        if (!currentAgent) {
+            console.log('❌ No hay agente autenticado, redirigiendo...');
+            showNotification('Debes iniciar sesión como agente', 'error');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+            return;
+        }
 
-        <!-- Área de Mensajes -->
-        <div id="chat-messages" class="chat-messages">
-            <!-- Los mensajes se cargarán aquí -->
-        </div>
-
-        <!-- Formulario de Mensaje -->
-        <div class="chat-input-container">
-            <div class="message-input-group">
-                <textarea id="chat-message-input" placeholder="Escribe tu mensaje al cliente..." rows="3"></textarea>
-                <button onclick="sendChatMessage()" class="btn-primary">Enviar</button>
-            </div>
-            <div class="chat-actions">
-                <button onclick="addInternalNote()" class="btn-secondary">Agregar Nota Interna</button>
-                <button onclick="resolveTicketFromChat()" class="btn-success">Marcar como Resuelto</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal para Notas Internas -->
-<div id="internal-note-modal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeInternalNoteModal()">&times;</span>
-        <h3>📝 Agregar Nota Interna</h3>
-        <textarea id="internal-note-text" placeholder="Escribe una nota interna para el equipo..." rows="4"></textarea>
-        <button onclick="saveInternalNote()" class="btn-primary">Guardar Nota</button>
-    </div>
-</div>
-
+        console.log('✅ Agente autenticado:', currentAgent.name);
         
-        // Funcionalidades específicas del dashboard de agentes
-        let currentTicketForAssignment = null;
+        // Inicializar datos de muestra si es necesario
+        initializeSampleData();
+        
+        // Cargar datos actualizados
+        loadLatestData();
+        
+        // Inicializar la interfaz
+        initializeAgentDashboard();
+        
+        console.log('🎯 Dashboard inicializado correctamente');
+    });
 
-        function openAssignModal(ticketId) {
-            currentTicketForAssignment = ticketId;
-            const ticket = getTicketById(ticketId);
-            document.getElementById('assign-ticket-subject').textContent = ticket.subject;
-            document.getElementById('assign-agent-modal').style.display = 'block';
-            loadAgentsForAssignment();
-        }
-
-        function closeAssignModal() {
-            document.getElementById('assign-agent-modal').style.display = 'none';
-            currentTicketForAssignment = null;
-        }
-
-        function assignTicketToAgent() {
-            if (!currentTicketForAssignment) return;
-            
-            const agentSelect = document.getElementById('agent-select');
-            const selectedAgentId = agentSelect.value;
-            
-            if (assignAgentToTicket(currentTicketForAssignment, selectedAgentId)) {
-                showNotification('Agente asignado correctamente', 'success');
-                closeAssignModal();
-                renderAllTickets();
-                updateAgentMetrics();
-            }
-        }
-
-        function exportTickets() {
-            const tickets = getAllTickets();
-            const csv = convertTicketsToCSV(tickets);
-            downloadCSV(csv, 'reporte_tickets.csv');
-            showNotification('Reporte exportado correctamente', 'success');
-        }
-
-        // Inicializar dashboard de agente
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeAgentDashboard();
+    function loadLatestData() {
+        // Recargar datos desde localStorage
+        tickets = JSON.parse(localStorage.getItem('tickets')) || [];
+        agents = JSON.parse(localStorage.getItem('agents')) || [];
+        clients = JSON.parse(localStorage.getItem('clients')) || [];
+        
+        console.log('📊 Datos cargados:', {
+            tickets: tickets.length,
+            agents: agents.length,
+            clients: clients.length
         });
-    </script>
+    }
+
+    function initializeAgentDashboard() {
+        const currentAgent = getCurrentAgent();
+        
+        // Mostrar información del agente actual
+        const agentHeader = document.getElementById('current-agent-header');
+        if (agentHeader) {
+            agentHeader.innerHTML = `
+                <div class="agent-welcome">
+                    <h2>Bienvenido, ${currentAgent.name}</h2>
+                    <div class="agent-profile">
+                        <span>📧 ${currentAgent.email}</span>
+                        ${currentAgent.phone ? `<span>📱 ${currentAgent.phone}</span>` : ''}
+                        ${currentAgent.skills ? `<span>🛠️ ${currentAgent.skills}</span>` : ''}
+                        <button onclick="logoutAgent()" class="btn-secondary btn-small">Cerrar Sesión</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Renderizar todo
+        renderAllTickets();
+        updateAgentMetrics();
+        updateAgentFilters();
+        loadAgentsForAssignment();
+        
+        // Configurar event listeners para filtros
+        setupFilterEventListeners();
+    }
+
+    function setupFilterEventListeners() {
+        const searchInput = document.getElementById('search-tickets');
+        const statusFilter = document.getElementById('status-filter');
+        const agentFilter = document.getElementById('agent-filter');
+        const priorityFilter = document.getElementById('priority-filter');
+
+        if (searchInput) {
+            searchInput.addEventListener('input', filterTickets);
+        }
+        if (statusFilter) {
+            statusFilter.addEventListener('change', filterTickets);
+        }
+        if (agentFilter) {
+            agentFilter.addEventListener('change', filterTickets);
+        }
+        if (priorityFilter) {
+            priorityFilter.addEventListener('change', filterTickets);
+        }
+    }
+
+    function filterTickets() {
+        const searchTerm = document.getElementById('search-tickets').value.toLowerCase();
+        const statusFilterValue = document.getElementById('status-filter').value;
+        const agentFilterValue = document.getElementById('agent-filter').value;
+        const priorityFilterValue = document.getElementById('priority-filter').value;
+        
+        const filteredTickets = tickets.filter(ticket => {
+            // Filtro de búsqueda
+            const matchesSearch = 
+                ticket.subject.toLowerCase().includes(searchTerm) || 
+                ticket.description.toLowerCase().includes(searchTerm) ||
+                (ticket.clientName && ticket.clientName.toLowerCase().includes(searchTerm));
+            
+            // Filtro de estado
+            const matchesStatus = statusFilterValue === 'all' || ticket.status === statusFilterValue;
+            
+            // Filtro de agente
+            const matchesAgent = agentFilterValue === 'all' || ticket.agentId === agentFilterValue;
+            
+            // Filtro de prioridad
+            const matchesPriority = priorityFilterValue === 'all' || ticket.priority === priorityFilterValue;
+            
+            return matchesSearch && matchesStatus && matchesAgent && matchesPriority;
+        });
+        
+        renderAllTickets(filteredTickets);
+    }
+</script>
 </body>
 </html>
