@@ -24,11 +24,41 @@
                         <button class="btn-primary">Acceder como Cliente</button>
                     </div>
                     
-                    <div class="login-option" onclick="redirectToAgentDashboard()">
+                    <div class="login-option" onclick="showAgentAuth()">
                         <div class="option-icon">🛠️</div>
                         <h3>Soy Agente</h3>
                         <p>Gestionar tickets y métricas</p>
                         <button class="btn-secondary">Acceder como Agente</button>
+                    </div>
+                </div>
+
+                <!-- Sección de Autenticación para Agentes (oculta inicialmente) -->
+                <div id="agent-auth-section" class="auth-section" style="display: none; margin-top: 2rem;">
+                    <div class="auth-card">
+                        <h3>Acceso para Agentes</h3>
+                        <div class="auth-tabs">
+                            <button class="tab-button active" onclick="openAgentTab('agent-login-tab')">Iniciar Sesión</button>
+                            <button class="tab-button" onclick="openAgentTab('agent-register-tab')">Registrarse como Agente</button>
+                        </div>
+
+                        <!-- Login Agente -->
+                        <div id="agent-login-tab" class="tab-content active">
+                            <form id="agent-login-form">
+                                <input type="email" id="agent-login-email" placeholder="Correo electrónico" required>
+                                <button type="submit" class="btn-primary">Acceder al Dashboard</button>
+                            </form>
+                        </div>
+
+                        <!-- Registro Agente -->
+                        <div id="agent-register-tab" class="tab-content">
+                            <form id="agent-register-form">
+                                <input type="text" id="agent-register-name" placeholder="Nombre completo" required>
+                                <input type="email" id="agent-register-email" placeholder="Correo electrónico" required>
+                                <input type="tel" id="agent-register-phone" placeholder="WhatsApp" required>
+                                <textarea id="agent-register-skills" placeholder="Especialidades o habilidades..." rows="3"></textarea>
+                                <button type="submit" class="btn-primary">Registrarse como Agente</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
@@ -44,9 +74,54 @@
             window.location.href = 'client-portal.html';
         }
 
-        function redirectToAgentDashboard() {
-            window.location.href = 'agent-dashboard.html';
+        function showAgentAuth() {
+            document.getElementById('agent-auth-section').style.display = 'block';
+        }
+
+        function openAgentTab(tabName) {
+            // Ocultar todos los tabs
+            document.querySelectorAll('#agent-auth-section .tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('#agent-auth-section .tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+
+            // Mostrar tab seleccionado
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // Manejo de formularios de agentes
+        document.addEventListener('DOMContentLoaded', function() {
+            const agentLoginForm = document.getElementById('agent-login-form');
+            const agentRegisterForm = document.getElementById('agent-register-form');
+
+            if (agentLoginForm) {
+                agentLoginForm.addEventListener('submit', handleAgentLogin);
+            }
+
+            if (agentRegisterForm) {
+                agentRegisterForm.addEventListener('submit', handleAgentRegistration);
+            }
+        });
+
+        function handleAgentLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('agent-login-email').value;
+            loginAgent(email);
+        }
+
+        function handleAgentRegistration(e) {
+            e.preventDefault();
+            const name = document.getElementById('agent-register-name').value;
+            const email = document.getElementById('agent-register-email').value;
+            const phone = document.getElementById('agent-register-phone').value;
+            const skills = document.getElementById('agent-register-skills').value;
+            
+            registerAgent(name, email, phone, skills);
         }
     </script>
+    <script src="script.js"></script>
 </body>
 </html>
