@@ -9,20 +9,14 @@
 <body>
     <div class="container">
         <!-- Header -->
-        <!-- Reemplazar el header en agent-dashboard.html -->
-<header class="header">
-    <div>
-        <h1>🛠️ Dashboard de Agentes</h1>
-        <div id="current-agent-header">
-            <!-- Se cargará dinámicamente con la información del agente -->
-        </div>
-    </div>
-    <nav class="nav">
-        <a href="index.html" class="nav-link">Inicio</a>
-        <a href="agent-dashboard.html" class="nav-link active">Dashboard</a>
-        <a href="knowledge-base.html" class="nav-link">Base de Conocimiento</a>
-    </nav>
-</header>
+        <header class="header">
+            <h1>🛠️ Dashboard de Agentes</h1>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">Inicio</a>
+                <a href="agent-dashboard.html" class="nav-link active">Dashboard</a>
+                <a href="knowledge-base.html" class="nav-link">Base de Conocimiento</a>
+            </nav>
+        </header>
 
         <!-- Métricas de Agentes -->
         <div class="metrics-container">
@@ -81,125 +75,48 @@
     </div>
 
     <script src="script.js"></script>
-<script>
-    // Inicializar dashboard de agente con verificación mejorada
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('🔧 Inicializando dashboard de agente...');
-        
-        // Verificar que el usuario esté autenticado como agente
-        const currentAgent = getCurrentAgent();
-        if (!currentAgent) {
-            console.log('❌ No hay agente autenticado, redirigiendo...');
-            showNotification('Debes iniciar sesión como agente', 'error');
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 2000);
-            return;
+    <script>
+        // Funcionalidades específicas del dashboard de agentes
+        let currentTicketForAssignment = null;
+
+        function openAssignModal(ticketId) {
+            currentTicketForAssignment = ticketId;
+            const ticket = getTicketById(ticketId);
+            document.getElementById('assign-ticket-subject').textContent = ticket.subject;
+            document.getElementById('assign-agent-modal').style.display = 'block';
+            loadAgentsForAssignment();
         }
 
-        console.log('✅ Agente autenticado:', currentAgent.name);
-        
-        // Inicializar datos de muestra si es necesario
-        initializeSampleData();
-        
-        // Cargar datos actualizados
-        loadLatestData();
-        
-        // Inicializar la interfaz
-        initializeAgentDashboard();
-        
-        console.log('🎯 Dashboard inicializado correctamente');
-    });
+        function closeAssignModal() {
+            document.getElementById('assign-agent-modal').style.display = 'none';
+            currentTicketForAssignment = null;
+        }
 
-    function loadLatestData() {
-        // Recargar datos desde localStorage
-        tickets = JSON.parse(localStorage.getItem('tickets')) || [];
-        agents = JSON.parse(localStorage.getItem('agents')) || [];
-        clients = JSON.parse(localStorage.getItem('clients')) || [];
-        
-        console.log('📊 Datos cargados:', {
-            tickets: tickets.length,
-            agents: agents.length,
-            clients: clients.length
+        function assignTicketToAgent() {
+            if (!currentTicketForAssignment) return;
+            
+            const agentSelect = document.getElementById('agent-select');
+            const selectedAgentId = agentSelect.value;
+            
+            if (assignAgentToTicket(currentTicketForAssignment, selectedAgentId)) {
+                showNotification('Agente asignado correctamente', 'success');
+                closeAssignModal();
+                renderAllTickets();
+                updateAgentMetrics();
+            }
+        }
+
+        function exportTickets() {
+            const tickets = getAllTickets();
+            const csv = convertTicketsToCSV(tickets);
+            downloadCSV(csv, 'reporte_tickets.csv');
+            showNotification('Reporte exportado correctamente', 'success');
+        }
+
+        // Inicializar dashboard de agente
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeAgentDashboard();
         });
-    }
-
-    function initializeAgentDashboard() {
-        const currentAgent = getCurrentAgent();
-        
-        // Mostrar información del agente actual
-        const agentHeader = document.getElementById('current-agent-header');
-        if (agentHeader) {
-            agentHeader.innerHTML = `
-                <div class="agent-welcome">
-                    <h2>Bienvenido, ${currentAgent.name}</h2>
-                    <div class="agent-profile">
-                        <span>📧 ${currentAgent.email}</span>
-                        ${currentAgent.phone ? `<span>📱 ${currentAgent.phone}</span>` : ''}
-                        ${currentAgent.skills ? `<span>🛠️ ${currentAgent.skills}</span>` : ''}
-                        <button onclick="logoutAgent()" class="btn-secondary btn-small">Cerrar Sesión</button>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Renderizar todo
-        renderAllTickets();
-        updateAgentMetrics();
-        updateAgentFilters();
-        loadAgentsForAssignment();
-        
-        // Configurar event listeners para filtros
-        setupFilterEventListeners();
-    }
-
-    function setupFilterEventListeners() {
-        const searchInput = document.getElementById('search-tickets');
-        const statusFilter = document.getElementById('status-filter');
-        const agentFilter = document.getElementById('agent-filter');
-        const priorityFilter = document.getElementById('priority-filter');
-
-        if (searchInput) {
-            searchInput.addEventListener('input', filterTickets);
-        }
-        if (statusFilter) {
-            statusFilter.addEventListener('change', filterTickets);
-        }
-        if (agentFilter) {
-            agentFilter.addEventListener('change', filterTickets);
-        }
-        if (priorityFilter) {
-            priorityFilter.addEventListener('change', filterTickets);
-        }
-    }
-
-    function filterTickets() {
-        const searchTerm = document.getElementById('search-tickets').value.toLowerCase();
-        const statusFilterValue = document.getElementById('status-filter').value;
-        const agentFilterValue = document.getElementById('agent-filter').value;
-        const priorityFilterValue = document.getElementById('priority-filter').value;
-        
-        const filteredTickets = tickets.filter(ticket => {
-            // Filtro de búsqueda
-            const matchesSearch = 
-                ticket.subject.toLowerCase().includes(searchTerm) || 
-                ticket.description.toLowerCase().includes(searchTerm) ||
-                (ticket.clientName && ticket.clientName.toLowerCase().includes(searchTerm));
-            
-            // Filtro de estado
-            const matchesStatus = statusFilterValue === 'all' || ticket.status === statusFilterValue;
-            
-            // Filtro de agente
-            const matchesAgent = agentFilterValue === 'all' || ticket.agentId === agentFilterValue;
-            
-            // Filtro de prioridad
-            const matchesPriority = priorityFilterValue === 'all' || ticket.priority === priorityFilterValue;
-            
-            return matchesSearch && matchesStatus && matchesAgent && matchesPriority;
-        });
-        
-        renderAllTickets(filteredTickets);
-    }
-</script>
+    </script>
 </body>
 </html>
