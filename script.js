@@ -3,6 +3,14 @@
 // Agentes predefinidos - ACTUALIZADOS
 const predefinedAgents = [
     { 
+        id: 'agent0', 
+        name: 'Camilo Gomez', 
+        email: 'tic@repuestossimonbolivar.com', 
+        phone: '+573202642133', 
+        active: true, 
+        skills: 'Soporte Técnico',
+        registrationDate: new Date().toISOString()
+    },{ 
         id: 'agent1', 
         name: 'Jonathan Arroyave', 
         email: 'tic2@repuestossimonbolivar.com', 
