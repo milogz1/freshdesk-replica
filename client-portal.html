@@ -136,6 +136,130 @@
             document.getElementById('client-ticket-form').reset();
         }
 
+        function debugClientData() {
+            console.log('=== DATOS DEL CLIENTE ===');
+            console.log('Cliente actual:', currentClient);
+            console.log('Todos los tickets:', tickets);
+            console.log('Todos los agentes:', agents);
+            console.log('Todos los clientes:', clients);
+            
+            if (currentClient) {
+                const clientTickets = tickets.filter(t => t.clientEmail === currentClient.email);
+                console.log('Tickets del cliente actual:', clientTickets);
+            }
+            
+            alert('Revisa la consola (F12) para ver los datos de depuración');
+        }
+
+        // Funciones auxiliares para el portal del cliente
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'open': 'Abierto',
+                'progress': 'En Progreso',
+                'resolved': 'Resuelto'
+            };
+            return statusMap[status] || status;
+        }
+
+        function getClientTickets(clientEmail) {
+            return tickets.filter(ticket => ticket.clientEmail === clientEmail);
+        }
+
+        // Inicializar portal de cliente
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 Inicializando portal del cliente...');
+            
+            // Cargar datos iniciales
+            tickets = JSON.parse(localStorage.getItem('tickets')) || [];
+            agents = JSON.parse(localStorage.getItem('agents')) || [];
+            clients = JSON.parse(localStorage.getItem('clients')) || [];
+            
+            // Verificar si ya hay un cliente logueado
+            const savedClient = localStorage.getItem('currentClient');
+            if (savedClient) {
+                try {
+                    const client = JSON.parse(savedClient);
+                    showClientDashboard(client);
+                    console.log('Cliente recuperado:', client);
+                } catch (error) {
+                    console.error('Error al recuperar cliente:', error);
+                    localStorage.removeItem('currentClient');
+                }
+            }
+            
+            setupClientForms();
+        });
+
+        function setupClientForms() {
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const ticketForm = document.getElementById('client-ticket-form');
+
+            if (loginForm) {
+                loginForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const email = document.getElementById('login-email').value;
+                    
+                    const result = loginClient(email);
+                    if (result.success) {
+                        showClientDashboard(result.client);
+                        showNotification('Bienvenido de nuevo', 'success');
+                    } else {
+                        showNotification(result.message, 'error');
+                    }
+                });
+            }
+
+            if (registerForm) {
+                registerForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const name = document.getElementById('register-name').value;
+                    const email = document.getElementById('register-email').value;
+                    const phone = document.getElementById('register-phone').value;
+                    
+                    const result = registerClient(name, email, phone);
+                    if (result.success) {
+                        showClientDashboard(result.client);
+                        showNotification('Cuenta creada exitosamente', 'success');
+                    } else {
+                        showNotification(result.message, 'error');
+                    }
+                });
+            }
+
+            if (ticketForm) {
+                ticketForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    if (!currentClient) {
+                        showNotification('Debes iniciar sesión primero', 'error');
+                        return;
+                    }
+                    
+                    const subject = document.getElementById('client-ticket-subject').value;
+                    const description = document.getElementById('client-ticket-description').value;
+                    const priority = document.getElementById('client-ticket-priority').value;
+                    
+                    createClientTicket(subject, description, priority, currentClient.email, currentClient.name);
+                    
+                    showNotification('Ticket creado exitosamente', 'success');
+                    hideNewTicketForm();
+                    renderClientTickets();
+                    updateClientMetrics();
+                });
+            }
+        }
+
         function showClientDashboard(client) {
             currentClient = client;
             localStorage.setItem('currentClient', JSON.stringify(client));
@@ -182,6 +306,30 @@
                     console.error('Error al renderizar ticket:', ticket, error);
                 }
             });
+        }
+
+        function updateClientMetrics() {
+            if (!currentClient) return;
+            
+            // Recargar datos actualizados
+            tickets = JSON.parse(localStorage.getItem('tickets')) || [];
+            
+            const clientTickets = tickets.filter(ticket => ticket.clientEmail === currentClient.email);
+            const metrics = {
+                open: clientTickets.filter(t => t.status === 'open').length,
+                progress: clientTickets.filter(t => t.status === 'progress').length,
+                resolved: clientTickets.filter(t => t.status === 'resolved').length
+            };
+            
+            console.log('Métricas del cliente:', metrics);
+            
+            const openElement = document.getElementById('client-open-tickets');
+            const progressElement = document.getElementById('client-progress-tickets');
+            const resolvedElement = document.getElementById('client-resolved-tickets');
+            
+            if (openElement) openElement.textContent = metrics.open;
+            if (progressElement) progressElement.textContent = metrics.progress;
+            if (resolvedElement) resolvedElement.textContent = metrics.resolved;
         }
 
         function createClientTicketElement(ticket) {
@@ -261,156 +409,6 @@
                 </div>
             `;
             return ticketDiv;
-        }
-
-        function updateClientMetrics() {
-            if (!currentClient) return;
-            
-            // Recargar datos actualizados
-            tickets = JSON.parse(localStorage.getItem('tickets')) || [];
-            
-            const clientTickets = tickets.filter(ticket => ticket.clientEmail === currentClient.email);
-            const metrics = {
-                open: clientTickets.filter(t => t.status === 'open').length,
-                progress: clientTickets.filter(t => t.status === 'progress').length,
-                resolved: clientTickets.filter(t => t.status === 'resolved').length
-            };
-            
-            console.log('Métricas del cliente:', metrics);
-            
-            const openElement = document.getElementById('client-open-tickets');
-            const progressElement = document.getElementById('client-progress-tickets');
-            const resolvedElement = document.getElementById('client-resolved-tickets');
-            
-            if (openElement) openElement.textContent = metrics.open;
-            if (progressElement) progressElement.textContent = metrics.progress;
-            if (resolvedElement) resolvedElement.textContent = metrics.resolved;
-        }
-
-        function handleClientLogin(e) {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            
-            const result = loginClient(email);
-            if (result.success) {
-                showClientDashboard(result.client);
-                showNotification('Bienvenido de nuevo', 'success');
-            } else {
-                showNotification(result.message, 'error');
-            }
-        }
-
-        function handleClientRegistration(e) {
-            e.preventDefault();
-            const name = document.getElementById('register-name').value;
-            const email = document.getElementById('register-email').value;
-            const phone = document.getElementById('register-phone').value;
-            
-            const result = registerClient(name, email, phone);
-            if (result.success) {
-                showClientDashboard(result.client);
-                showNotification('Cuenta creada exitosamente', 'success');
-            } else {
-                showNotification(result.message, 'error');
-            }
-        }
-
-        function handleClientTicketSubmit(e) {
-            e.preventDefault();
-            
-            if (!currentClient) {
-                showNotification('Debes iniciar sesión primero', 'error');
-                return;
-            }
-            
-            const subject = document.getElementById('client-ticket-subject').value;
-            const description = document.getElementById('client-ticket-description').value;
-            const priority = document.getElementById('client-ticket-priority').value;
-            
-            createClientTicket(subject, description, priority, currentClient.email, currentClient.name);
-            
-            showNotification('Ticket creado exitosamente', 'success');
-            hideNewTicketForm();
-            renderClientTickets();
-            updateClientMetrics();
-        }
-
-        function debugClientData() {
-            console.log('=== DATOS DEL CLIENTE ===');
-            console.log('Cliente actual:', currentClient);
-            console.log('Todos los tickets:', tickets);
-            console.log('Todos los agentes:', agents);
-            console.log('Todos los clientes:', clients);
-            
-            if (currentClient) {
-                const clientTickets = tickets.filter(t => t.clientEmail === currentClient.email);
-                console.log('Tickets del cliente actual:', clientTickets);
-            }
-            
-            alert('Revisa la consola (F12) para ver los datos de depuración');
-        }
-
-        // Funciones auxiliares para el portal del cliente
-        function escapeHtml(unsafe) {
-            if (!unsafe) return '';
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-
-        function getStatusText(status) {
-            const statusMap = {
-                'open': 'Abierto',
-                'progress': 'En Progreso',
-                'resolved': 'Resuelto'
-            };
-            return statusMap[status] || status;
-        }
-
-        // Inicializar portal de cliente
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔧 Inicializando portal del cliente...');
-            
-            // Cargar datos iniciales
-            tickets = JSON.parse(localStorage.getItem('tickets')) || [];
-            agents = JSON.parse(localStorage.getItem('agents')) || [];
-            clients = JSON.parse(localStorage.getItem('clients')) || [];
-            
-            // Verificar si ya hay un cliente logueado
-            const savedClient = localStorage.getItem('currentClient');
-            if (savedClient) {
-                try {
-                    const client = JSON.parse(savedClient);
-                    showClientDashboard(client);
-                    console.log('Cliente recuperado:', client);
-                } catch (error) {
-                    console.error('Error al recuperar cliente:', error);
-                    localStorage.removeItem('currentClient');
-                }
-            }
-            
-            setupClientForms();
-        });
-
-        function setupClientForms() {
-            const loginForm = document.getElementById('login-form');
-            const registerForm = document.getElementById('register-form');
-            const ticketForm = document.getElementById('client-ticket-form');
-
-            if (loginForm) {
-                loginForm.addEventListener('submit', handleClientLogin);
-            }
-
-            if (registerForm) {
-                registerForm.addEventListener('submit', handleClientRegistration);
-            }
-
-            if (ticketForm) {
-                ticketForm.addEventListener('submit', handleClientTicketSubmit);
-            }
         }
 
         // Hacer funciones disponibles globalmente
