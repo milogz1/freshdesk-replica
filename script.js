@@ -1098,3 +1098,11 @@ function createAgentTicketElement(ticket) {
     `;
     return ticketDiv;
 }
+
+function forceReload() {
+    console.log('🔄 Forzando recarga de datos...');
+    initializeSampleData();
+    loadLatestData();
+    initializeAgentDashboard();
+    showNotification('Datos recargados correctamente', 'success');
+}
