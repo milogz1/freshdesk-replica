@@ -82,6 +82,52 @@
 
     <script src="script.js"></script>
     <script>
+
+
+<!-- Modal para Chat y Resolución -->
+<div id="chat-modal" class="modal">
+    <div class="modal-content" style="max-width: 800px; height: 80vh; display: flex; flex-direction: column;">
+        <span class="close" onclick="closeChatModal()">&times;</span>
+        
+        <!-- Header del Chat -->
+        <div class="chat-header">
+            <h3>💬 Chat del Ticket</h3>
+            <div class="ticket-chat-info">
+                <strong id="chat-ticket-subject"></strong>
+                <span class="ticket-status" id="chat-ticket-status"></span>
+            </div>
+        </div>
+
+        <!-- Área de Mensajes -->
+        <div id="chat-messages" class="chat-messages">
+            <!-- Los mensajes se cargarán aquí -->
+        </div>
+
+        <!-- Formulario de Mensaje -->
+        <div class="chat-input-container">
+            <div class="message-input-group">
+                <textarea id="chat-message-input" placeholder="Escribe tu mensaje al cliente..." rows="3"></textarea>
+                <button onclick="sendChatMessage()" class="btn-primary">Enviar</button>
+            </div>
+            <div class="chat-actions">
+                <button onclick="addInternalNote()" class="btn-secondary">Agregar Nota Interna</button>
+                <button onclick="resolveTicketFromChat()" class="btn-success">Marcar como Resuelto</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Notas Internas -->
+<div id="internal-note-modal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeInternalNoteModal()">&times;</span>
+        <h3>📝 Agregar Nota Interna</h3>
+        <textarea id="internal-note-text" placeholder="Escribe una nota interna para el equipo..." rows="4"></textarea>
+        <button onclick="saveInternalNote()" class="btn-primary">Guardar Nota</button>
+    </div>
+</div>
+
+        
         // Funcionalidades específicas del dashboard de agentes
         let currentTicketForAssignment = null;
 
