@@ -552,3 +552,250 @@ window.closeAssignModal = closeAssignModal;
 window.assignTicketToAgent = assignTicketToAgent;
 window.changeTicketStatus = changeTicketStatus;
 window.exportTickets = exportTickets;
+
+
+// ===== FUNCIONES DE REGISTRO Y LOGIN DE AGENTES =====
+
+function registerAgent(name, email, phone, skills = '') {
+    // Verificar si el agente ya existe
+    const existingAgent = agents.find(agent => agent.email === email);
+    if (existingAgent) {
+        showNotification('Este correo ya está registrado como agente', 'error');
+        return { success: false };
+    }
+
+    const newAgent = {
+        id: 'agent_' + Date.now(),
+        name,
+        email,
+        phone,
+        skills,
+        registrationDate: new Date().toISOString(),
+        active: true,
+        role: 'agent'
+    };
+
+    agents.push(newAgent);
+    localStorage.setItem('agents', JSON.stringify(agents));
+    
+    showNotification('Agente registrado exitosamente. Ahora puedes iniciar sesión.', 'success');
+    
+    // Limpiar formulario
+    document.getElementById('agent-register-form').reset();
+    
+    return { success: true, agent: newAgent };
+}
+
+function loginAgent(email) {
+    const agent = agents.find(agent => agent.email === email && agent.active);
+    if (agent) {
+        // Guardar agente actual en session
+        localStorage.setItem('currentAgent', JSON.stringify(agent));
+        window.location.href = 'agent-dashboard.html';
+    } else {
+        showNotification('Agente no encontrado o cuenta inactiva', 'error');
+    }
+}
+
+function getCurrentAgent() {
+    const agentData = localStorage.getItem('currentAgent');
+    return agentData ? JSON.parse(agentData) : null;
+}
+
+function logoutAgent() {
+    localStorage.removeItem('currentAgent');
+    window.location.href = 'index.html';
+}
+
+// ===== FUNCIONES PARA MOSTRAR INFORMACIÓN DE AGENTES =====
+
+function loadAgentsForAssignment() {
+    const agentSelect = document.getElementById('agent-select');
+    if (!agentSelect) return;
+    
+    agentSelect.innerHTML = '<option value="">Seleccionar agente</option>';
+    
+    const activeAgents = agents.filter(agent => agent.active);
+    activeAgents.forEach(agent => {
+        const option = document.createElement('option');
+        option.value = agent.id;
+        option.textContent = `${agent.name} - ${agent.skills || 'Soporte General'}`;
+        agentSelect.appendChild(option);
+    });
+}
+
+function updateAgentFilters() {
+    const agentFilter = document.getElementById('agent-filter');
+    if (!agentFilter) return;
+    
+    agentFilter.innerHTML = '<option value="all">Todos los agentes</option>';
+    
+    const activeAgents = agents.filter(agent => agent.active);
+    activeAgents.forEach(agent => {
+        const option = document.createElement('option');
+        option.value = agent.id;
+        option.textContent = agent.name;
+        agentFilter.appendChild(option);
+    });
+}
+
+// ===== FUNCIONES MEJORADAS PARA TICKETS =====
+
+function assignAgentToTicket(ticketId, agentId) {
+    const ticketIndex = tickets.findIndex(t => t.id === ticketId);
+    if (ticketIndex !== -1) {
+        const agent = agents.find(a => a.id === agentId);
+        if (!agent) {
+            showNotification('Agente no encontrado', 'error');
+            return false;
+        }
+
+        tickets[ticketIndex].agentId = agentId;
+        tickets[ticketIndex].agentName = agent.name;
+        tickets[ticketIndex].agentEmail = agent.email;
+        tickets[ticketIndex].agentPhone = agent.phone;
+        
+        // Agregar al historial
+        if (!tickets[ticketIndex].updates) {
+            tickets[ticketIndex].updates = [];
+        }
+        tickets[ticketIndex].updates.push({
+            type: 'assignment',
+            message: `Ticket asignado a ${agent.name}`,
+            timestamp: new Date().toISOString(),
+            agent: agent.name
+        });
+        
+        saveTickets();
+        showNotification(`Ticket asignado a ${agent.name}`, 'success');
+        return true;
+    }
+    return false;
+}
+
+// ===== FUNCIONES PARA MOSTRAR INFORMACIÓN DE AGENTES A CLIENTES =====
+
+function createClientTicketElement(ticket) {
+    const ticketDiv = document.createElement('div');
+    ticketDiv.className = 'ticket-item';
+    
+    let agentInfo = '';
+    if (ticket.agentId) {
+        const agent = agents.find(a => a.id === ticket.agentId);
+        if (agent) {
+            agentInfo = `
+                <div class="assigned-agent-info">
+                    <h4>🛠️ Agente Asignado</h4>
+                    <div class="agent-contact">
+                        <strong>${agent.name}</strong>
+                        ${agent.skills ? `<div class="agent-skills">${agent.skills}</div>` : ''}
+                        <div class="agent-contact-details">
+                            <span>📧 ${agent.email}</span>
+                            ${agent.phone ? `<span>📱 ${agent.phone}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        agentInfo = `
+            <div class="assigned-agent-info waiting">
+                <h4>⏳ Esperando asignación</h4>
+                <p>Tu ticket será asignado a un agente pronto</p>
+            </div>
+        `;
+    }
+    
+    ticketDiv.innerHTML = `
+        <div class="ticket-header">
+            <div>
+                <div class="ticket-subject">${escapeHtml(ticket.subject)}</div>
+                <div class="ticket-priority ${'priority-' + ticket.priority}">
+                    Prioridad: ${ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
+                </div>
+            </div>
+            <div class="ticket-agent-info">
+                <span class="ticket-status status-${ticket.status}">
+                    ${getStatusText(ticket.status)}
+                </span>
+            </div>
+        </div>
+        <p>${escapeHtml(ticket.description)}</p>
+        ${agentInfo}
+        <div class="ticket-meta">
+            <small>Creado: ${new Date(ticket.createdAt).toLocaleDateString()}</small>
+            ${ticket.updates && ticket.updates.length > 0 ? 
+                `<small>Última actualización: ${new Date(ticket.updates[ticket.updates.length-1].timestamp).toLocaleDateString()}</small>` : ''}
+        </div>
+    `;
+    return ticketDiv;
+}
+
+// ===== INICIALIZACIÓN MEJORADA DEL DASHBOARD DE AGENTES =====
+
+function initializeAgentDashboard() {
+    // Verificar que el usuario sea un agente
+    const currentAgent = getCurrentAgent();
+    if (!currentAgent) {
+        showNotification('Debes iniciar sesión como agente', 'error');
+        setTimeout(() => window.location.href = 'index.html', 2000);
+        return;
+    }
+
+    // Mostrar información del agente actual
+    const agentHeader = document.getElementById('current-agent-header');
+    if (agentHeader) {
+        agentHeader.innerHTML = `
+            <h2>Bienvenido, ${currentAgent.name}</h2>
+            <div class="agent-profile">
+                <span>📧 ${currentAgent.email}</span>
+                ${currentAgent.phone ? `<span>📱 ${currentAgent.phone}</span>` : ''}
+                ${currentAgent.skills ? `<span>🛠️ ${currentAgent.skills}</span>` : ''}
+                <button onclick="logoutAgent()" class="btn-secondary btn-small">Cerrar Sesión</button>
+            </div>
+        `;
+    }
+
+    renderAllTickets();
+    updateAgentMetrics();
+    updateAgentFilters();
+    loadAgentsForAssignment();
+}
+
+// ===== FUNCIONES DE MÉTRICAS MEJORADAS =====
+
+function getAgentMetrics() {
+    const metrics = {};
+    
+    // Métricas para todos los agentes
+    agents.forEach(agent => {
+        if (agent.active) {
+            const agentTickets = tickets.filter(ticket => ticket.agentId === agent.id);
+            metrics[agent.id] = {
+                name: agent.name,
+                email: agent.email,
+                phone: agent.phone,
+                skills: agent.skills,
+                total: agentTickets.length,
+                open: agentTickets.filter(t => t.status === 'open').length,
+                progress: agentTickets.filter(t => t.status === 'progress').length,
+                resolved: agentTickets.filter(t => t.status === 'resolved').length,
+                performance: agentTickets.length > 0 ? 
+                    Math.round((agentTickets.filter(t => t.status === 'resolved').length / agentTickets.length) * 100) : 0
+            };
+        }
+    });
+
+    // Tickets sin asignar
+    const unassignedTickets = tickets.filter(t => !t.agentId);
+    metrics.unassigned = {
+        name: 'Sin asignar',
+        total: unassignedTickets.length,
+        open: unassignedTickets.filter(t => t.status === 'open').length,
+        progress: unassignedTickets.filter(t => t.status === 'progress').length,
+        resolved: unassignedTickets.filter(t => t.status === 'resolved').length,
+        performance: 0
+    };
+
+    return metrics;
+}
