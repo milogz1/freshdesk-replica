@@ -2,9 +2,9 @@
 
 // Agentes predefinidos
 const predefinedAgents = [
-    { id: 'agent1', name: 'Ana García', email: 'ana@soporte.com', active: true },
-    { id: 'agent2', name: 'Carlos López', email: 'carlos@soporte.com', active: true },
-    { id: 'agent3', name: 'María Rodríguez', email: 'maria@soporte.com', active: true }
+    { id: 'agent1', name: 'Ana García', email: 'ana@soporte.com', phone: '+573001234567', skills: 'Soporte Técnico', active: true },
+    { id: 'agent2', name: 'Carlos López', email: 'carlos@soporte.com', phone: '+573007654321', skills: 'Facturación', active: true },
+    { id: 'agent3', name: 'María Rodríguez', email: 'maria@soporte.com', phone: '+573008765432', skills: 'Ventas', active: true }
 ];
 
 // Cargar datos existentes o inicializar
@@ -97,8 +97,15 @@ function assignAgentToTicket(ticketId, agentId) {
     const ticketIndex = tickets.findIndex(t => t.id === ticketId);
     if (ticketIndex !== -1) {
         const agent = agents.find(a => a.id === agentId);
+        if (!agent) {
+            showNotification('Agente no encontrado', 'error');
+            return false;
+        }
+
         tickets[ticketIndex].agentId = agentId;
-        tickets[ticketIndex].agentName = agent ? agent.name : 'Sin asignar';
+        tickets[ticketIndex].agentName = agent.name;
+        tickets[ticketIndex].agentEmail = agent.email;
+        tickets[ticketIndex].agentPhone = agent.phone;
         
         // Agregar al historial
         if (!tickets[ticketIndex].updates) {
@@ -106,11 +113,13 @@ function assignAgentToTicket(ticketId, agentId) {
         }
         tickets[ticketIndex].updates.push({
             type: 'assignment',
-            message: `Ticket asignado a ${agent ? agent.name : 'agente'}`,
-            timestamp: new Date().toISOString()
+            message: `Ticket asignado a ${agent.name}`,
+            timestamp: new Date().toISOString(),
+            agent: agent.name
         });
         
         saveTickets();
+        showNotification(`Ticket asignado a ${agent.name}`, 'success');
         return true;
     }
     return false;
@@ -143,14 +152,21 @@ function getAgentMetrics() {
     const metrics = {};
     
     agents.forEach(agent => {
-        const agentTickets = tickets.filter(ticket => ticket.agentId === agent.id);
-        metrics[agent.id] = {
-            name: agent.name,
-            total: agentTickets.length,
-            open: agentTickets.filter(t => t.status === 'open').length,
-            progress: agentTickets.filter(t => t.status === 'progress').length,
-            resolved: agentTickets.filter(t => t.status === 'resolved').length
-        };
+        if (agent.active) {
+            const agentTickets = tickets.filter(ticket => ticket.agentId === agent.id);
+            metrics[agent.id] = {
+                name: agent.name,
+                email: agent.email,
+                phone: agent.phone,
+                skills: agent.skills,
+                total: agentTickets.length,
+                open: agentTickets.filter(t => t.status === 'open').length,
+                progress: agentTickets.filter(t => t.status === 'progress').length,
+                resolved: agentTickets.filter(t => t.status === 'resolved').length,
+                performance: agentTickets.length > 0 ? 
+                    Math.round((agentTickets.filter(t => t.status === 'resolved').length / agentTickets.length) * 100) : 0
+            };
+        }
     });
 
     // Tickets sin asignar
@@ -160,7 +176,8 @@ function getAgentMetrics() {
         total: unassignedTickets.length,
         open: unassignedTickets.filter(t => t.status === 'open').length,
         progress: unassignedTickets.filter(t => t.status === 'progress').length,
-        resolved: unassignedTickets.filter(t => t.status === 'resolved').length
+        resolved: unassignedTickets.filter(t => t.status === 'resolved').length,
+        performance: 0
     };
 
     return metrics;
@@ -179,6 +196,7 @@ function getClientMetrics(clientEmail) {
 // ===== FUNCIONES DE UI/UX =====
 
 function showNotification(message, type = 'info') {
+    // Crear elemento de notificación
     const notification = document.createElement('div');
     notification.style.cssText = `
         position: fixed;
@@ -215,146 +233,120 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// ===== INICIALIZACIÓN DE MÓDULOS =====
+// ===== INICIALIZACIÓN DE DATOS DE PRUEBA =====
 
-function initializeAgentDashboard() {
-    renderAllTickets();
-    updateAgentMetrics();
-    loadAgentFilters();
-}
-
-function initializeClientPortal() {
-    // Verificar si ya hay un cliente logueado
-    const savedClient = localStorage.getItem('currentClient');
-    if (savedClient) {
-        showClientDashboard(JSON.parse(savedClient));
+function initializeSampleData() {
+    let tickets = JSON.parse(localStorage.getItem('tickets')) || [];
+    let clients = JSON.parse(localStorage.getItem('clients')) || [];
+    
+    if (tickets.length === 0) {
+        // Crear tickets de ejemplo
+        tickets = [
+            {
+                id: 1,
+                subject: "Error al acceder al sistema",
+                description: "No puedo iniciar sesión en la plataforma, me da error de credenciales",
+                status: "open",
+                priority: "high",
+                clientName: "Juan Pérez",
+                clientEmail: "juan@empresa.com",
+                createdAt: new Date().toISOString(),
+                agentId: null
+            },
+            {
+                id: 2,
+                subject: "Problema con facturación",
+                description: "La factura del mes pasado no coincide con lo contratado",
+                status: "open", 
+                priority: "medium",
+                clientName: "María García",
+                clientEmail: "maria@empresa.com",
+                createdAt: new Date(Date.now() - 86400000).toISOString(),
+                agentId: null
+            },
+            {
+                id: 3,
+                subject: "Solicitud de nuevo usuario",
+                description: "Necesito que se cree una cuenta para un nuevo empleado",
+                status: "progress",
+                priority: "low",
+                clientName: "Carlos López",
+                clientEmail: "carlos@empresa.com", 
+                createdAt: new Date(Date.now() - 172800000).toISOString(),
+                agentId: "agent1"
+            }
+        ];
+        localStorage.setItem('tickets', JSON.stringify(tickets));
     }
     
-    setupClientForms();
-}
-
-function setupClientForms() {
-    const loginForm = document.getElementById('login-form');
-    const registerForm = document.getElementById('register-form');
-    const ticketForm = document.getElementById('client-ticket-form');
-
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleClientLogin);
+    if (clients.length === 0) {
+        clients = [
+            {
+                id: 1,
+                name: "Juan Pérez",
+                email: "juan@empresa.com",
+                phone: "+573001234567",
+                registrationDate: new Date().toISOString()
+            },
+            {
+                id: 2, 
+                name: "María García",
+                email: "maria@empresa.com",
+                phone: "+573007654321",
+                registrationDate: new Date().toISOString()
+            }
+        ];
+        localStorage.setItem('clients', JSON.stringify(clients));
     }
-
-    if (registerForm) {
-        registerForm.addEventListener('submit', handleClientRegistration);
-    }
-
-    if (ticketForm) {
-        ticketForm.addEventListener('submit', handleClientTicketSubmit);
-    }
-}
-
-// ===== MANEJADORES DE EVENTOS =====
-
-function handleClientLogin(e) {
-    e.preventDefault();
-    const email = document.getElementById('login-email').value;
-    
-    const result = loginClient(email);
-    if (result.success) {
-        showClientDashboard(result.client);
-        showNotification('Bienvenido de nuevo', 'success');
-    } else {
-        showNotification(result.message, 'error');
-    }
-}
-
-function handleClientRegistration(e) {
-    e.preventDefault();
-    const name = document.getElementById('register-name').value;
-    const email = document.getElementById('register-email').value;
-    const phone = document.getElementById('register-phone').value;
-    
-    const result = registerClient(name, email, phone);
-    if (result.success) {
-        showClientDashboard(result.client);
-        showNotification('Cuenta creada exitosamente', 'success');
-    } else {
-        showNotification(result.message, 'error');
-    }
-}
-
-function handleClientTicketSubmit(e) {
-    e.preventDefault();
-    
-    if (!currentClient) {
-        showNotification('Debes iniciar sesión primero', 'error');
-        return;
-    }
-    
-    const subject = document.getElementById('client-ticket-subject').value;
-    const description = document.getElementById('client-ticket-description').value;
-    const priority = document.getElementById('client-ticket-priority').value;
-    
-    createClientTicket(subject, description, priority, currentClient.email, currentClient.name);
-    
-    showNotification('Ticket creado exitosamente', 'success');
-    hideNewTicketForm();
-    renderClientTickets();
-    updateClientMetrics();
 }
 
 // ===== RENDERIZADO DE UI =====
 
-function showClientDashboard(client) {
-    currentClient = client;
-    localStorage.setItem('currentClient', JSON.stringify(client));
-    
-    document.getElementById('client-auth-section').style.display = 'none';
-    document.getElementById('client-dashboard').style.display = 'block';
-    document.getElementById('client-name').textContent = client.name;
-    
-    renderClientTickets();
-    updateClientMetrics();
-}
-
-function renderAllTickets() {
+function renderAllTickets(ticketsToRender = tickets) {
     const ticketsList = document.getElementById('all-tickets-list');
-    if (!ticketsList) return;
-    
-    ticketsList.innerHTML = '';
-    
-    if (tickets.length === 0) {
-        ticketsList.innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 2rem;">No hay tickets en el sistema.</p>';
+    if (!ticketsList) {
+        console.error('❌ No se encontró el elemento all-tickets-list');
         return;
     }
     
-    tickets.forEach(ticket => {
-        const ticketElement = createAgentTicketElement(ticket);
-        ticketsList.appendChild(ticketElement);
-    });
-}
-
-function renderClientTickets() {
-    if (!currentClient) return;
+    console.log('🎫 Renderizando tickets:', ticketsToRender.length);
     
-    const ticketsList = document.getElementById('client-tickets-list');
-    if (!ticketsList) return;
-    
-    const clientTickets = getClientTickets(currentClient.email);
     ticketsList.innerHTML = '';
     
-    if (clientTickets.length === 0) {
-        ticketsList.innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 2rem;">No tienes tickets aún.</p>';
+    if (ticketsToRender.length === 0) {
+        ticketsList.innerHTML = `
+            <div class="no-tickets">
+                <h3>📭 No se encontraron tickets</h3>
+                <p>No hay tickets que coincidan con los filtros aplicados</p>
+            </div>
+        `;
         return;
     }
     
-    clientTickets.forEach(ticket => {
-        const ticketElement = createClientTicketElement(ticket);
-        ticketsList.appendChild(ticketElement);
+    ticketsToRender.forEach(ticket => {
+        try {
+            const ticketElement = createAgentTicketElement(ticket);
+            ticketsList.appendChild(ticketElement);
+        } catch (error) {
+            console.error('Error al renderizar ticket:', ticket, error);
+        }
     });
+    
+    console.log('✅ Tickets renderizados correctamente');
 }
 
 function createAgentTicketElement(ticket) {
     const ticketDiv = document.createElement('div');
     ticketDiv.className = 'ticket-item';
+    
+    const chatButton = ticket.chatMessages && ticket.chatMessages.length > 0 
+        ? `<button onclick="openChatModal(${ticket.id})" class="btn-chat">
+             💬 Chat (${ticket.chatMessages.length})
+           </button>`
+        : `<button onclick="openChatModal(${ticket.id})" class="btn-secondary">
+             Iniciar Chat
+           </button>`;
+    
     ticketDiv.innerHTML = `
         <div class="ticket-header">
             <div>
@@ -377,41 +369,26 @@ function createAgentTicketElement(ticket) {
             </div>
         </div>
         <p>${escapeHtml(ticket.description)}</p>
+        
+        <!-- Información de Chat -->
+        <div class="ticket-chat-preview">
+            ${ticket.chatMessages && ticket.chatMessages.length > 0 ? 
+                `<div class="chat-summary">
+                    <strong>💬 ${ticket.chatMessages.length} mensajes</strong>
+                    <small>Último: ${new Date(ticket.chatMessages[ticket.chatMessages.length-1].timestamp).toLocaleDateString()}</small>
+                </div>` : 
+                '<div class="chat-summary">💬 Sin mensajes aún</div>'
+            }
+            ${chatButton}
+        </div>
+        
         <div class="ticket-actions">
             <button onclick="changeTicketStatus(${ticket.id}, 'progress')" class="btn-secondary">
                 En Progreso
             </button>
-            <button onclick="changeTicketStatus(${ticket.id}, 'resolved')" class="btn-secondary">
-                Resolver
+            <button onclick="openChatModal(${ticket.id})" class="btn-primary">
+                Gestionar Chat
             </button>
-        </div>
-    `;
-    return ticketDiv;
-}
-
-function createClientTicketElement(ticket) {
-    const ticketDiv = document.createElement('div');
-    ticketDiv.className = 'ticket-item';
-    ticketDiv.innerHTML = `
-        <div class="ticket-header">
-            <div>
-                <div class="ticket-subject">${escapeHtml(ticket.subject)}</div>
-                <div class="ticket-priority ${'priority-' + ticket.priority}">
-                    Prioridad: ${ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
-                </div>
-            </div>
-            <div class="ticket-agent-info">
-                <span class="ticket-status status-${ticket.status}">
-                    ${getStatusText(ticket.status)}
-                </span>
-                <div class="ticket-agent">
-                    Agente: ${ticket.agentName || 'En espera de asignación'}
-                </div>
-            </div>
-        </div>
-        <p>${escapeHtml(ticket.description)}</p>
-        <div class="ticket-meta">
-            <small>Creado: ${new Date(ticket.createdAt).toLocaleDateString()}</small>
         </div>
     `;
     return ticketDiv;
@@ -436,58 +413,16 @@ function updateAgentMetrics() {
                 <span class="metric-progress">En Progreso: ${metric.progress}</span>
                 <span class="metric-resolved">Resueltos: ${metric.resolved}</span>
             </div>
+            ${metric.performance > 0 ? `<div class="agent-performance">Rendimiento: ${metric.performance}%</div>` : ''}
         `;
         statsContainer.appendChild(metricElement);
-    });
-}
-
-function updateClientMetrics() {
-    if (!currentClient) return;
-    
-    const metrics = getClientMetrics(currentClient.email);
-    document.getElementById('client-open-tickets').textContent = metrics.open;
-    document.getElementById('client-progress-tickets').textContent = metrics.progress;
-    document.getElementById('client-resolved-tickets').textContent = metrics.resolved;
-}
-
-function loadAgentFilters() {
-    const agentFilter = document.getElementById('agent-filter');
-    const agentSelect = document.getElementById('agent-select');
-    
-    if (agentFilter) {
-        agents.forEach(agent => {
-            const option = document.createElement('option');
-            option.value = agent.id;
-            option.textContent = agent.name;
-            agentFilter.appendChild(option);
-        });
-    }
-    
-    if (agentSelect) {
-        agents.forEach(agent => {
-            const option = document.createElement('option');
-            option.value = agent.id;
-            option.textContent = agent.name;
-            agentSelect.appendChild(option);
-        });
-    }
-}
-
-function loadAgentsForAssignment() {
-    const agentSelect = document.getElementById('agent-select');
-    agentSelect.innerHTML = '<option value="">Seleccionar agente</option>';
-    
-    agents.forEach(agent => {
-        const option = document.createElement('option');
-        option.value = agent.id;
-        option.textContent = agent.name;
-        agentSelect.appendChild(option);
     });
 }
 
 // ===== UTILIDADES =====
 
 function escapeHtml(unsafe) {
+    if (!unsafe) return '';
     return unsafe
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
@@ -503,6 +438,11 @@ function getStatusText(status) {
         'resolved': 'Resuelto'
     };
     return statusMap[status] || status;
+}
+
+function getCurrentAgent() {
+    const agentData = localStorage.getItem('currentAgent');
+    return agentData ? JSON.parse(agentData) : null;
 }
 
 function convertTicketsToCSV(tickets) {
@@ -530,6 +470,13 @@ function downloadCSV(csv, filename) {
     window.URL.revokeObjectURL(url);
 }
 
+function exportTickets() {
+    const tickets = getAllTickets();
+    const csv = convertTicketsToCSV(tickets);
+    downloadCSV(csv, 'reporte_tickets.csv');
+    showNotification('Reporte exportado correctamente', 'success');
+}
+
 // ===== INICIALIZACIÓN GLOBAL =====
 
 // Agregar estilos de animación para notificaciones
@@ -546,9 +493,5 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Hacer funciones disponibles globalmente
-window.openAssignModal = openAssignModal;
-window.closeAssignModal = closeAssignModal;
-window.assignTicketToAgent = assignTicketToAgent;
-window.changeTicketStatus = changeTicketStatus;
-window.exportTickets = exportTickets;
+// Inicializar datos de muestra al cargar la aplicación
+initializeSampleData();
