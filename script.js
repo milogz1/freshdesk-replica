@@ -1,10 +1,34 @@
 // ===== ESTRUCTURAS DE DATOS =====
 
-// Agentes predefinidos
+// Agentes predefinidos - ACTUALIZADOS
 const predefinedAgents = [
-    { id: 'agent1', name: 'Ana García', email: 'ana@soporte.com', phone: '+573001234567', skills: 'Soporte Técnico', active: true },
-    { id: 'agent2', name: 'Carlos López', email: 'carlos@soporte.com', phone: '+573007654321', skills: 'Facturación', active: true },
-    { id: 'agent3', name: 'María Rodríguez', email: 'maria@soporte.com', phone: '+573008765432', skills: 'Ventas', active: true }
+    { 
+        id: 'agent1', 
+        name: 'Jonathan Arroyave', 
+        email: 'tic2@repuestossimonbolivar.com', 
+        phone: '+573113878767', 
+        active: true, 
+        skills: 'Soporte Técnico',
+        registrationDate: new Date().toISOString()
+    },
+    { 
+        id: 'agent2', 
+        name: 'Sebastian Villada', 
+        email: 'tic3@repuestossimonbolivar.com', 
+        phone: '+573233315933', 
+        active: true, 
+        skills: 'Soporte Técnico',
+        registrationDate: new Date().toISOString()
+    },
+    { 
+        id: 'agent3', 
+        name: 'Katalina', 
+        email: 'tic_practicante@repuestossimonbolivar.com', 
+        phone: '+573045980739', 
+        active: true, 
+        skills: 'Practicante',
+        registrationDate: new Date().toISOString()
+    }
 ];
 
 // Cargar datos existentes o inicializar
@@ -84,8 +108,8 @@ function createClientTicket(subject, description, priority, clientEmail, clientN
         clientEmail,
         clientName,
         createdAt: new Date().toISOString(),
-        agentId: null, // Será asignado posteriormente por un agente
-        updates: [] // Historial de actualizaciones
+        agentId: null,
+        updates: []
     };
 
     tickets.unshift(newTicket);
@@ -196,7 +220,6 @@ function getClientMetrics(clientEmail) {
 // ===== FUNCIONES DE UI/UX =====
 
 function showNotification(message, type = 'info') {
-    // Crear elemento de notificación
     const notification = document.createElement('div');
     notification.style.cssText = `
         position: fixed;
@@ -233,74 +256,105 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
-// ===== INICIALIZACIÓN DE DATOS DE PRUEBA =====
+// ===== INICIALIZACIÓN DE MÓDULOS =====
 
-function initializeSampleData() {
-    let tickets = JSON.parse(localStorage.getItem('tickets')) || [];
-    let clients = JSON.parse(localStorage.getItem('clients')) || [];
-    
-    if (tickets.length === 0) {
-        // Crear tickets de ejemplo
-        tickets = [
-            {
-                id: 1,
-                subject: "Error al acceder al sistema",
-                description: "No puedo iniciar sesión en la plataforma, me da error de credenciales",
-                status: "open",
-                priority: "high",
-                clientName: "Juan Pérez",
-                clientEmail: "juan@empresa.com",
-                createdAt: new Date().toISOString(),
-                agentId: null
-            },
-            {
-                id: 2,
-                subject: "Problema con facturación",
-                description: "La factura del mes pasado no coincide con lo contratado",
-                status: "open", 
-                priority: "medium",
-                clientName: "María García",
-                clientEmail: "maria@empresa.com",
-                createdAt: new Date(Date.now() - 86400000).toISOString(),
-                agentId: null
-            },
-            {
-                id: 3,
-                subject: "Solicitud de nuevo usuario",
-                description: "Necesito que se cree una cuenta para un nuevo empleado",
-                status: "progress",
-                priority: "low",
-                clientName: "Carlos López",
-                clientEmail: "carlos@empresa.com", 
-                createdAt: new Date(Date.now() - 172800000).toISOString(),
-                agentId: "agent1"
-            }
-        ];
-        localStorage.setItem('tickets', JSON.stringify(tickets));
+function initializeAgentDashboard() {
+    renderAllTickets();
+    updateAgentMetrics();
+    updateAgentFilters();
+    loadAgentsForAssignment();
+}
+
+function initializeClientPortal() {
+    const savedClient = localStorage.getItem('currentClient');
+    if (savedClient) {
+        showClientDashboard(JSON.parse(savedClient));
     }
     
-    if (clients.length === 0) {
-        clients = [
-            {
-                id: 1,
-                name: "Juan Pérez",
-                email: "juan@empresa.com",
-                phone: "+573001234567",
-                registrationDate: new Date().toISOString()
-            },
-            {
-                id: 2, 
-                name: "María García",
-                email: "maria@empresa.com",
-                phone: "+573007654321",
-                registrationDate: new Date().toISOString()
-            }
-        ];
-        localStorage.setItem('clients', JSON.stringify(clients));
+    setupClientForms();
+}
+
+function setupClientForms() {
+    const loginForm = document.getElementById('login-form');
+    const registerForm = document.getElementById('register-form');
+    const ticketForm = document.getElementById('client-ticket-form');
+
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleClientLogin);
+    }
+
+    if (registerForm) {
+        registerForm.addEventListener('submit', handleClientRegistration);
+    }
+
+    if (ticketForm) {
+        ticketForm.addEventListener('submit', handleClientTicketSubmit);
     }
 }
 
+// ===== MANEJADORES DE EVENTOS =====
+
+function handleClientLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    
+    const result = loginClient(email);
+    if (result.success) {
+        showClientDashboard(result.client);
+        showNotification('Bienvenido de nuevo', 'success');
+    } else {
+        showNotification(result.message, 'error');
+    }
+}
+
+function handleClientRegistration(e) {
+    e.preventDefault();
+    const name = document.getElementById('register-name').value;
+    const email = document.getElementById('register-email').value;
+    const phone = document.getElementById('register-phone').value;
+    
+    const result = registerClient(name, email, phone);
+    if (result.success) {
+        showClientDashboard(result.client);
+        showNotification('Cuenta creada exitosamente', 'success');
+    } else {
+        showNotification(result.message, 'error');
+    }
+}
+
+function handleClientTicketSubmit(e) {
+    e.preventDefault();
+    
+    if (!currentClient) {
+        showNotification('Debes iniciar sesión primero', 'error');
+        return;
+    }
+    
+    const subject = document.getElementById('client-ticket-subject').value;
+    const description = document.getElementById('client-ticket-description').value;
+    const priority = document.getElementById('client-ticket-priority').value;
+    
+    createClientTicket(subject, description, priority, currentClient.email, currentClient.name);
+    
+    showNotification('Ticket creado exitosamente', 'success');
+    hideNewTicketForm();
+    renderClientTickets();
+    updateClientMetrics();
+}
+
 // ===== RENDERIZADO DE UI =====
+
+function showClientDashboard(client) {
+    currentClient = client;
+    localStorage.setItem('currentClient', JSON.stringify(client));
+    
+    document.getElementById('client-auth-section').style.display = 'none';
+    document.getElementById('client-dashboard').style.display = 'block';
+    document.getElementById('client-name').textContent = client.name;
+    
+    renderClientTickets();
+    updateClientMetrics();
+}
 
 function renderAllTickets(ticketsToRender = tickets) {
     const ticketsList = document.getElementById('all-tickets-list');
@@ -308,8 +362,6 @@ function renderAllTickets(ticketsToRender = tickets) {
         console.error('❌ No se encontró el elemento all-tickets-list');
         return;
     }
-    
-    console.log('🎫 Renderizando tickets:', ticketsToRender.length);
     
     ticketsList.innerHTML = '';
     
@@ -331,8 +383,40 @@ function renderAllTickets(ticketsToRender = tickets) {
             console.error('Error al renderizar ticket:', ticket, error);
         }
     });
+}
+
+function renderClientTickets() {
+    if (!currentClient) {
+        console.log('No hay cliente actual');
+        return;
+    }
     
-    console.log('✅ Tickets renderizados correctamente');
+    const ticketsList = document.getElementById('client-tickets-list');
+    if (!ticketsList) {
+        console.error('No se encontró client-tickets-list');
+        return;
+    }
+    
+    tickets = JSON.parse(localStorage.getItem('tickets')) || [];
+    agents = JSON.parse(localStorage.getItem('agents')) || [];
+    
+    const clientTickets = tickets.filter(ticket => ticket.clientEmail === currentClient.email);
+    
+    ticketsList.innerHTML = '';
+    
+    if (clientTickets.length === 0) {
+        ticketsList.innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 2rem;">No tienes tickets aún.</p>';
+        return;
+    }
+    
+    clientTickets.forEach(ticket => {
+        try {
+            const ticketElement = createClientTicketElement(ticket);
+            ticketsList.appendChild(ticketElement);
+        } catch (error) {
+            console.error('Error al renderizar ticket:', ticket, error);
+        }
+    });
 }
 
 function createAgentTicketElement(ticket) {
@@ -394,6 +478,85 @@ function createAgentTicketElement(ticket) {
     return ticketDiv;
 }
 
+function createClientTicketElement(ticket) {
+    const ticketDiv = document.createElement('div');
+    ticketDiv.className = 'ticket-item';
+    
+    let agentInfo = '';
+    if (ticket.agentId) {
+        const agent = agents.find(a => a.id === ticket.agentId);
+        if (agent) {
+            agentInfo = `
+                <div class="assigned-agent-info">
+                    <h4>🛠️ Agente Asignado</h4>
+                    <div class="agent-contact">
+                        <strong>${agent.name}</strong>
+                        ${agent.skills ? `<div class="agent-skills">${agent.skills}</div>` : ''}
+                        <div class="agent-contact-details">
+                            <span>📧 ${agent.email}</span>
+                            ${agent.phone ? `<span>📱 ${agent.phone}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        agentInfo = `
+            <div class="assigned-agent-info waiting">
+                <h4>⏳ Esperando asignación</h4>
+                <p>Tu ticket será asignado a un agente pronto</p>
+            </div>
+        `;
+    }
+    
+    // Mostrar resumen del chat
+    let chatSummary = '';
+    if (ticket.chatMessages && ticket.chatMessages.length > 0) {
+        const agentMessages = ticket.chatMessages.filter(msg => msg.type === 'agent_message').length;
+        const lastMessages = ticket.chatMessages.slice(-3).map(msg => `
+            <div class="client-chat-message ${msg.type === 'agent_message' ? 'agent' : 'system'}">
+                <strong>${msg.type === 'agent_message' ? '🛠️ Agente' : '📢 Sistema'}:</strong>
+                ${escapeHtml(msg.content.length > 100 ? msg.content.substring(0, 100) + '...' : msg.content)}
+            </div>
+        `).join('');
+        
+        chatSummary = `
+            <div class="client-chat-summary">
+                <h4>💬 Historial de Conversación</h4>
+                <div class="chat-messages-preview">
+                    ${lastMessages}
+                </div>
+                <small>${agentMessages} mensajes del agente • Última actualización: ${new Date(ticket.chatMessages[ticket.chatMessages.length-1].timestamp).toLocaleDateString()}</small>
+            </div>
+        `;
+    }
+    
+    ticketDiv.innerHTML = `
+        <div class="ticket-header">
+            <div>
+                <div class="ticket-subject">${escapeHtml(ticket.subject)}</div>
+                <div class="ticket-priority ${'priority-' + ticket.priority}">
+                    Prioridad: ${ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
+                </div>
+            </div>
+            <div class="ticket-agent-info">
+                <span class="ticket-status status-${ticket.status}">
+                    ${getStatusText(ticket.status)}
+                </span>
+            </div>
+        </div>
+        <p>${escapeHtml(ticket.description)}</p>
+        ${agentInfo}
+        ${chatSummary}
+        <div class="ticket-meta">
+            <small>Creado: ${new Date(ticket.createdAt).toLocaleDateString()}</small>
+            ${ticket.updates && ticket.updates.length > 0 ? 
+                `<small>Última actualización: ${new Date(ticket.updates[ticket.updates.length-1].timestamp).toLocaleDateString()}</small>` : ''}
+        </div>
+    `;
+    return ticketDiv;
+}
+
 function updateAgentMetrics() {
     const metrics = getAgentMetrics();
     const statsContainer = document.getElementById('agents-stats');
@@ -419,6 +582,57 @@ function updateAgentMetrics() {
     });
 }
 
+function updateClientMetrics() {
+    if (!currentClient) return;
+    
+    tickets = JSON.parse(localStorage.getItem('tickets')) || [];
+    
+    const clientTickets = tickets.filter(ticket => ticket.clientEmail === currentClient.email);
+    const metrics = {
+        open: clientTickets.filter(t => t.status === 'open').length,
+        progress: clientTickets.filter(t => t.status === 'progress').length,
+        resolved: clientTickets.filter(t => t.status === 'resolved').length
+    };
+    
+    const openElement = document.getElementById('client-open-tickets');
+    const progressElement = document.getElementById('client-progress-tickets');
+    const resolvedElement = document.getElementById('client-resolved-tickets');
+    
+    if (openElement) openElement.textContent = metrics.open;
+    if (progressElement) progressElement.textContent = metrics.progress;
+    if (resolvedElement) resolvedElement.textContent = metrics.resolved;
+}
+
+function loadAgentsForAssignment() {
+    const agentSelect = document.getElementById('agent-select');
+    if (!agentSelect) return;
+    
+    agentSelect.innerHTML = '<option value="">Seleccionar agente</option>';
+    
+    const activeAgents = agents.filter(agent => agent.active);
+    activeAgents.forEach(agent => {
+        const option = document.createElement('option');
+        option.value = agent.id;
+        option.textContent = `${agent.name} - ${agent.skills || 'Soporte General'}`;
+        agentSelect.appendChild(option);
+    });
+}
+
+function updateAgentFilters() {
+    const agentFilter = document.getElementById('agent-filter');
+    if (!agentFilter) return;
+    
+    agentFilter.innerHTML = '<option value="all">Todos los agentes</option>';
+    
+    const activeAgents = agents.filter(agent => agent.active);
+    activeAgents.forEach(agent => {
+        const option = document.createElement('option');
+        option.value = agent.id;
+        option.textContent = agent.name;
+        agentFilter.appendChild(option);
+    });
+}
+
 // ===== UTILIDADES =====
 
 function escapeHtml(unsafe) {
@@ -438,11 +652,6 @@ function getStatusText(status) {
         'resolved': 'Resuelto'
     };
     return statusMap[status] || status;
-}
-
-function getCurrentAgent() {
-    const agentData = localStorage.getItem('currentAgent');
-    return agentData ? JSON.parse(agentData) : null;
 }
 
 function convertTicketsToCSV(tickets) {
@@ -470,14 +679,124 @@ function downloadCSV(csv, filename) {
     window.URL.revokeObjectURL(url);
 }
 
-function exportTickets() {
-    const tickets = getAllTickets();
-    const csv = convertTicketsToCSV(tickets);
-    downloadCSV(csv, 'reporte_tickets.csv');
-    showNotification('Reporte exportado correctamente', 'success');
+// ===== FUNCIONES DE REGISTRO Y LOGIN DE AGENTES =====
+
+function registerAgent(name, email, phone, skills = '') {
+    const existingAgent = agents.find(agent => agent.email === email);
+    if (existingAgent) {
+        showNotification('Este correo ya está registrado como agente', 'error');
+        return { success: false };
+    }
+
+    const newAgent = {
+        id: 'agent_' + Date.now(),
+        name,
+        email,
+        phone,
+        skills,
+        registrationDate: new Date().toISOString(),
+        active: true,
+        role: 'agent'
+    };
+
+    agents.push(newAgent);
+    localStorage.setItem('agents', JSON.stringify(agents));
+    
+    showNotification('Agente registrado exitosamente. Ahora puedes iniciar sesión.', 'success');
+    
+    return { success: true, agent: newAgent };
+}
+
+function loginAgent(email) {
+    const agent = agents.find(agent => agent.email === email && agent.active);
+    if (agent) {
+        localStorage.setItem('currentAgent', JSON.stringify(agent));
+        window.location.href = 'agent-dashboard.html';
+    } else {
+        showNotification('Agente no encontrado o cuenta inactiva', 'error');
+    }
+}
+
+function getCurrentAgent() {
+    const agentData = localStorage.getItem('currentAgent');
+    return agentData ? JSON.parse(agentData) : null;
+}
+
+function logoutAgent() {
+    localStorage.removeItem('currentAgent');
+    window.location.href = 'index.html';
+}
+
+// ===== FUNCIONES PARA DATOS DE PRUEBA =====
+
+function initializeSampleData() {
+    let tickets = JSON.parse(localStorage.getItem('tickets')) || [];
+    let clients = JSON.parse(localStorage.getItem('clients')) || [];
+    
+    if (tickets.length === 0) {
+        tickets = [
+            {
+                id: 1,
+                subject: "Error al acceder al sistema",
+                description: "No puedo iniciar sesión en la plataforma, me da error de credenciales",
+                status: "open",
+                priority: "high",
+                clientName: "Juan Pérez",
+                clientEmail: "juan@empresa.com",
+                createdAt: new Date().toISOString(),
+                agentId: null
+            },
+            {
+                id: 2,
+                subject: "Problema con facturación",
+                description: "La factura del mes pasado no coincide con lo contratado",
+                status: "open", 
+                priority: "medium",
+                clientName: "María García",
+                clientEmail: "maria@empresa.com",
+                createdAt: new Date(Date.now() - 86400000).toISOString(),
+                agentId: null
+            },
+            {
+                id: 3,
+                subject: "Solicitud de nuevo usuario",
+                description: "Necesito que se cree una cuenta para un nuevo empleado",
+                status: "progress",
+                priority: "low",
+                clientName: "Carlos López",
+                clientEmail: "carlos@empresa.com", 
+                createdAt: new Date(Date.now() - 172800000).toISOString(),
+                agentId: "agent1"
+            }
+        ];
+        localStorage.setItem('tickets', JSON.stringify(tickets));
+    }
+    
+    if (clients.length === 0) {
+        clients = [
+            {
+                id: 1,
+                name: "Juan Pérez",
+                email: "juan@empresa.com",
+                phone: "+573001234567",
+                registrationDate: new Date().toISOString()
+            },
+            {
+                id: 2, 
+                name: "María García",
+                email: "maria@empresa.com",
+                phone: "+573007654321",
+                registrationDate: new Date().toISOString()
+            }
+        ];
+        localStorage.setItem('clients', JSON.stringify(clients));
+    }
 }
 
 // ===== INICIALIZACIÓN GLOBAL =====
+
+// Variables globales
+let currentClient = null;
 
 // Agregar estilos de animación para notificaciones
 const style = document.createElement('style');
@@ -493,5 +812,14 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Inicializar datos de muestra al cargar la aplicación
-initializeSampleData();
+// Hacer funciones disponibles globalmente
+window.getAllTickets = getAllTickets;
+window.getTicketById = getTicketById;
+window.assignAgentToTicket = assignAgentToTicket;
+window.changeTicketStatus = changeTicketStatus;
+window.exportTickets = exportTickets;
+window.initializeSampleData = initializeSampleData;
+window.registerAgent = registerAgent;
+window.loginAgent = loginAgent;
+window.getCurrentAgent = getCurrentAgent;
+window.logoutAgent = logoutAgent;
