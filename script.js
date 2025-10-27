@@ -34,7 +34,9 @@ const predefinedAgents = [
 // Cargar datos existentes o inicializar
 let tickets = JSON.parse(localStorage.getItem('tickets')) || [];
 let clients = JSON.parse(localStorage.getItem('clients')) || [];
-let agents = JSON.parse(localStorage.getItem('agents')) || predefinedAgents;
+// Forzar el uso de los agentes predefinidos actualizados
+let agents = predefinedAgents;
+localStorage.setItem('agents', JSON.stringify(agents));
 
 // Guardar datos iniciales si no existen
 if (!localStorage.getItem('agents')) {
