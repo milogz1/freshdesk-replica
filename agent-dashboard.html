@@ -547,6 +547,13 @@
             window.location.href = 'index.html';
         }
 
+        function exportTickets() {
+            const tickets = getAllTickets();
+            const csv = convertTicketsToCSV(tickets);
+            downloadCSV(csv, 'reporte_tickets.csv');
+            showNotification('Reporte exportado correctamente', 'success');
+        }
+
         // Hacer funciones disponibles globalmente
         window.openAssignModal = openAssignModal;
         window.closeAssignModal = closeAssignModal;
