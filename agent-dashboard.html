@@ -10,7 +10,12 @@
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <h1>🛠️ Dashboard de Agentes</h1>
+            <div>
+                <h1>🛠️ Dashboard de Agentes</h1>
+                <div id="current-agent-header">
+                    <!-- Se cargará dinámicamente con la información del agente -->
+                </div>
+            </div>
             <nav class="nav">
                 <a href="index.html" class="nav-link">Inicio</a>
                 <a href="agent-dashboard.html" class="nav-link active">Dashboard</a>
@@ -44,6 +49,7 @@
                 <option value="medium">Media</option>
                 <option value="high">Alta</option>
             </select>
+            <button onclick="forceReload()" class="btn-secondary">🔄 Recargar</button>
         </div>
 
         <!-- Lista de Todos los Tickets -->
@@ -74,10 +80,173 @@
         </div>
     </div>
 
+    <!-- Modal para Chat y Resolución -->
+    <div id="chat-modal" class="modal">
+        <div class="modal-content" style="max-width: 800px; height: 80vh; display: flex; flex-direction: column;">
+            <span class="close" onclick="closeChatModal()">&times;</span>
+            
+            <!-- Header del Chat -->
+            <div class="chat-header">
+                <h3>💬 Chat del Ticket</h3>
+                <div class="ticket-chat-info">
+                    <strong id="chat-ticket-subject"></strong>
+                    <span class="ticket-status" id="chat-ticket-status"></span>
+                </div>
+            </div>
+
+            <!-- Área de Mensajes -->
+            <div id="chat-messages" class="chat-messages">
+                <!-- Los mensajes se cargarán aquí -->
+            </div>
+
+            <!-- Formulario de Mensaje -->
+            <div class="chat-input-container">
+                <div class="message-input-group">
+                    <textarea id="chat-message-input" placeholder="Escribe tu mensaje al cliente..." rows="3"></textarea>
+                    <button onclick="sendChatMessage()" class="btn-primary">Enviar</button>
+                </div>
+                <div class="chat-actions">
+                    <button onclick="addInternalNote()" class="btn-secondary">Agregar Nota Interna</button>
+                    <button onclick="resolveTicketFromChat()" class="btn-success">Marcar como Resuelto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Notas Internas -->
+    <div id="internal-note-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeInternalNoteModal()">&times;</span>
+            <h3>📝 Agregar Nota Interna</h3>
+            <textarea id="internal-note-text" placeholder="Escribe una nota interna para el equipo..." rows="4"></textarea>
+            <button onclick="saveInternalNote()" class="btn-primary">Guardar Nota</button>
+        </div>
+    </div>
+
     <script src="script.js"></script>
     <script>
-        // Funcionalidades específicas del dashboard de agentes
+        // Variables globales para el dashboard de agentes
         let currentTicketForAssignment = null;
+        let currentChatTicketId = null;
+
+        // Inicializar dashboard de agente
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 Inicializando dashboard de agente...');
+            
+            // Verificar que el usuario esté autenticado como agente
+            const currentAgent = getCurrentAgent();
+            if (!currentAgent) {
+                console.log('❌ No hay agente autenticado, redirigiendo...');
+                alert('Debes iniciar sesión como agente');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+                return;
+            }
+
+            console.log('✅ Agente autenticado:', currentAgent.name);
+            
+            // Inicializar datos de muestra si es necesario
+            initializeSampleData();
+            
+            // Cargar datos actualizados
+            loadLatestData();
+            
+            // Inicializar la interfaz
+            initializeAgentDashboard();
+            
+            console.log('🎯 Dashboard inicializado correctamente');
+        });
+
+        function loadLatestData() {
+            // Recargar datos desde localStorage
+            tickets = JSON.parse(localStorage.getItem('tickets')) || [];
+            agents = JSON.parse(localStorage.getItem('agents')) || [];
+            clients = JSON.parse(localStorage.getItem('clients')) || [];
+            
+            console.log('📊 Datos cargados:', {
+                tickets: tickets.length,
+                agents: agents.length,
+                clients: clients.length
+            });
+        }
+
+        function initializeAgentDashboard() {
+            const currentAgent = getCurrentAgent();
+            
+            // Mostrar información del agente actual
+            const agentHeader = document.getElementById('current-agent-header');
+            if (agentHeader) {
+                agentHeader.innerHTML = `
+                    <div class="agent-welcome">
+                        <h2>Bienvenido, ${currentAgent.name}</h2>
+                        <div class="agent-profile">
+                            <span>📧 ${currentAgent.email}</span>
+                            ${currentAgent.phone ? `<span>📱 ${currentAgent.phone}</span>` : ''}
+                            ${currentAgent.skills ? `<span>🛠️ ${currentAgent.skills}</span>` : ''}
+                            <button onclick="logoutAgent()" class="btn-secondary btn-small">Cerrar Sesión</button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Renderizar todo
+            renderAllTickets();
+            updateAgentMetrics();
+            updateAgentFilters();
+            loadAgentsForAssignment();
+            
+            // Configurar event listeners para filtros
+            setupFilterEventListeners();
+        }
+
+        function setupFilterEventListeners() {
+            const searchInput = document.getElementById('search-tickets');
+            const statusFilter = document.getElementById('status-filter');
+            const agentFilter = document.getElementById('agent-filter');
+            const priorityFilter = document.getElementById('priority-filter');
+
+            if (searchInput) {
+                searchInput.addEventListener('input', filterTickets);
+            }
+            if (statusFilter) {
+                statusFilter.addEventListener('change', filterTickets);
+            }
+            if (agentFilter) {
+                agentFilter.addEventListener('change', filterTickets);
+            }
+            if (priorityFilter) {
+                priorityFilter.addEventListener('change', filterTickets);
+            }
+        }
+
+        function filterTickets() {
+            const searchTerm = document.getElementById('search-tickets').value.toLowerCase();
+            const statusFilterValue = document.getElementById('status-filter').value;
+            const agentFilterValue = document.getElementById('agent-filter').value;
+            const priorityFilterValue = document.getElementById('priority-filter').value;
+            
+            const filteredTickets = tickets.filter(ticket => {
+                // Filtro de búsqueda
+                const matchesSearch = 
+                    ticket.subject.toLowerCase().includes(searchTerm) || 
+                    ticket.description.toLowerCase().includes(searchTerm) ||
+                    (ticket.clientName && ticket.clientName.toLowerCase().includes(searchTerm));
+                
+                // Filtro de estado
+                const matchesStatus = statusFilterValue === 'all' || ticket.status === statusFilterValue;
+                
+                // Filtro de agente
+                const matchesAgent = agentFilterValue === 'all' || ticket.agentId === agentFilterValue;
+                
+                // Filtro de prioridad
+                const matchesPriority = priorityFilterValue === 'all' || ticket.priority === priorityFilterValue;
+                
+                return matchesSearch && matchesStatus && matchesAgent && matchesPriority;
+            });
+            
+            renderAllTickets(filteredTickets);
+        }
 
         function openAssignModal(ticketId) {
             currentTicketForAssignment = ticketId;
@@ -92,11 +261,29 @@
             currentTicketForAssignment = null;
         }
 
+        function loadAgentsForAssignment() {
+            const agentSelect = document.getElementById('agent-select');
+            agentSelect.innerHTML = '<option value="">Seleccionar agente</option>';
+            
+            const activeAgents = agents.filter(agent => agent.active);
+            activeAgents.forEach(agent => {
+                const option = document.createElement('option');
+                option.value = agent.id;
+                option.textContent = `${agent.name} - ${agent.skills || 'Soporte General'}`;
+                agentSelect.appendChild(option);
+            });
+        }
+
         function assignTicketToAgent() {
             if (!currentTicketForAssignment) return;
             
             const agentSelect = document.getElementById('agent-select');
             const selectedAgentId = agentSelect.value;
+            
+            if (!selectedAgentId) {
+                alert('Selecciona un agente');
+                return;
+            }
             
             if (assignAgentToTicket(currentTicketForAssignment, selectedAgentId)) {
                 showNotification('Agente asignado correctamente', 'success');
@@ -106,17 +293,272 @@
             }
         }
 
-        function exportTickets() {
-            const tickets = getAllTickets();
-            const csv = convertTicketsToCSV(tickets);
-            downloadCSV(csv, 'reporte_tickets.csv');
-            showNotification('Reporte exportado correctamente', 'success');
+        function updateAgentFilters() {
+            const agentFilter = document.getElementById('agent-filter');
+            if (!agentFilter) return;
+            
+            agentFilter.innerHTML = '<option value="all">Todos los agentes</option>';
+            
+            const activeAgents = agents.filter(agent => agent.active);
+            activeAgents.forEach(agent => {
+                const option = document.createElement('option');
+                option.value = agent.id;
+                option.textContent = agent.name;
+                agentFilter.appendChild(option);
+            });
         }
 
-        // Inicializar dashboard de agente
-        document.addEventListener('DOMContentLoaded', function() {
+        function openChatModal(ticketId) {
+            currentChatTicketId = ticketId;
+            const ticket = getTicketById(ticketId);
+            
+            if (!ticket) {
+                showNotification('Ticket no encontrado', 'error');
+                return;
+            }
+
+            // Actualizar información del ticket en el modal
+            document.getElementById('chat-ticket-subject').textContent = ticket.subject;
+            document.getElementById('chat-ticket-status').textContent = getStatusText(ticket.status);
+            document.getElementById('chat-ticket-status').className = `ticket-status status-${ticket.status}`;
+            
+            // Cargar mensajes existentes
+            loadChatMessages(ticketId);
+            
+            // Mostrar modal
+            document.getElementById('chat-modal').style.display = 'block';
+            
+            // Enfocar el área de texto
+            setTimeout(() => {
+                document.getElementById('chat-message-input').focus();
+            }, 100);
+        }
+
+        function closeChatModal() {
+            document.getElementById('chat-modal').style.display = 'none';
+            currentChatTicketId = null;
+            document.getElementById('chat-message-input').value = '';
+        }
+
+        function loadChatMessages(ticketId) {
+            const ticket = getTicketById(ticketId);
+            const chatMessagesContainer = document.getElementById('chat-messages');
+            
+            if (!chatMessagesContainer) return;
+            
+            chatMessagesContainer.innerHTML = '';
+            
+            // Inicializar array de mensajes si no existe
+            if (!ticket.chatMessages) {
+                ticket.chatMessages = [];
+                saveTickets();
+            }
+            
+            if (ticket.chatMessages.length === 0) {
+                chatMessagesContainer.innerHTML = `
+                    <div class="no-messages">
+                        <p>💬 Inicia la conversación con el cliente</p>
+                        <small>Todos los mensajes quedarán registrados en el historial del ticket</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Mostrar mensajes en orden cronológico
+            ticket.chatMessages.forEach(message => {
+                const messageElement = createChatMessageElement(message);
+                chatMessagesContainer.appendChild(messageElement);
+            });
+            
+            // Scroll al final
+            chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+        }
+
+        function createChatMessageElement(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${message.type}`;
+            
+            const timestamp = new Date(message.timestamp).toLocaleString();
+            
+            if (message.type === 'internal_note') {
+                messageDiv.innerHTML = `
+                    <div class="message-header">
+                        <span class="message-sender">📝 ${message.sender} (Nota Interna)</span>
+                        <span class="message-time">${timestamp}</span>
+                    </div>
+                    <div class="message-content">${escapeHtml(message.content)}</div>
+                `;
+            } else if (message.type === 'system_message') {
+                messageDiv.innerHTML = `
+                    <div class="message-header">
+                        <span class="message-sender">📢 Sistema</span>
+                        <span class="message-time">${timestamp}</span>
+                    </div>
+                    <div class="message-content">${escapeHtml(message.content)}</div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="message-header">
+                        <span class="message-sender">${message.sender === 'agent' ? '🛠️ Agente' : '👤 Cliente'}</span>
+                        <span class="message-time">${timestamp}</span>
+                    </div>
+                    <div class="message-content">${escapeHtml(message.content)}</div>
+                `;
+            }
+            
+            return messageDiv;
+        }
+
+        function sendChatMessage() {
+            if (!currentChatTicketId) return;
+            
+            const messageInput = document.getElementById('chat-message-input');
+            const content = messageInput.value.trim();
+            
+            if (!content) {
+                showNotification('Escribe un mensaje antes de enviar', 'warning');
+                return;
+            }
+            
+            const ticket = getTicketById(currentChatTicketId);
+            const currentAgent = getCurrentAgent();
+            
+            if (!ticket.chatMessages) {
+                ticket.chatMessages = [];
+            }
+            
+            // Agregar mensaje del agente
+            ticket.chatMessages.push({
+                type: 'agent_message',
+                sender: currentAgent ? currentAgent.name : 'Agente',
+                content: content,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Agregar al historial de updates
+            if (!ticket.updates) ticket.updates = [];
+            ticket.updates.push({
+                type: 'chat_message',
+                message: `Agente envió mensaje: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"`,
+                timestamp: new Date().toISOString(),
+                agent: currentAgent ? currentAgent.name : 'Sistema'
+            });
+            
+            saveTickets();
+            
+            // Recargar mensajes y limpiar input
+            loadChatMessages(currentChatTicketId);
+            messageInput.value = '';
+            
+            showNotification('Mensaje enviado al historial del ticket', 'success');
+        }
+
+        function addInternalNote() {
+            document.getElementById('internal-note-modal').style.display = 'block';
+            document.getElementById('internal-note-text').value = '';
+            document.getElementById('internal-note-text').focus();
+        }
+
+        function closeInternalNoteModal() {
+            document.getElementById('internal-note-modal').style.display = 'none';
+        }
+
+        function saveInternalNote() {
+            if (!currentChatTicketId) return;
+            
+            const noteInput = document.getElementById('internal-note-text');
+            const content = noteInput.value.trim();
+            
+            if (!content) {
+                showNotification('Escribe una nota antes de guardar', 'warning');
+                return;
+            }
+            
+            const ticket = getTicketById(currentChatTicketId);
+            const currentAgent = getCurrentAgent();
+            
+            if (!ticket.chatMessages) {
+                ticket.chatMessages = [];
+            }
+            
+            // Agregar nota interna
+            ticket.chatMessages.push({
+                type: 'internal_note',
+                sender: currentAgent ? currentAgent.name : 'Agente',
+                content: content,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Agregar al historial de updates
+            if (!ticket.updates) ticket.updates = [];
+            ticket.updates.push({
+                type: 'internal_note',
+                message: `Nota interna agregada`,
+                timestamp: new Date().toISOString(),
+                agent: currentAgent ? currentAgent.name : 'Sistema'
+            });
+            
+            saveTickets();
+            
+            // Cerrar modal y actualizar chat
+            closeInternalNoteModal();
+            loadChatMessages(currentChatTicketId);
+            
+            showNotification('Nota interna guardada', 'success');
+        }
+
+        function resolveTicketFromChat() {
+            if (!currentChatTicketId) return;
+            
+            if (confirm('¿Estás seguro de que quieres marcar este ticket como resuelto?')) {
+                changeTicketStatus(currentChatTicketId, 'resolved');
+                
+                const ticket = getTicketById(currentChatTicketId);
+                const currentAgent = getCurrentAgent();
+                
+                // Agregar mensaje de resolución al chat
+                if (!ticket.chatMessages) ticket.chatMessages = [];
+                ticket.chatMessages.push({
+                    type: 'system_message',
+                    sender: 'Sistema',
+                    content: `✅ Ticket marcado como resuelto por ${currentAgent ? currentAgent.name : 'agente'}`,
+                    timestamp: new Date().toISOString()
+                });
+                
+                saveTickets();
+                
+                showNotification('Ticket marcado como resuelto', 'success');
+                closeChatModal();
+                renderAllTickets();
+                updateAgentMetrics();
+            }
+        }
+
+        function forceReload() {
+            console.log('🔄 Forzando recarga de datos...');
+            initializeSampleData();
+            loadLatestData();
             initializeAgentDashboard();
-        });
+            showNotification('Datos recargados correctamente', 'success');
+        }
+
+        function logoutAgent() {
+            localStorage.removeItem('currentAgent');
+            window.location.href = 'index.html';
+        }
+
+        // Hacer funciones disponibles globalmente
+        window.openAssignModal = openAssignModal;
+        window.closeAssignModal = closeAssignModal;
+        window.assignTicketToAgent = assignTicketToAgent;
+        window.changeTicketStatus = changeTicketStatus;
+        window.exportTickets = exportTickets;
+        window.openChatModal = openChatModal;
+        window.closeChatModal = closeChatModal;
+        window.addInternalNote = addInternalNote;
+        window.resolveTicketFromChat = resolveTicketFromChat;
+        window.forceReload = forceReload;
+        window.logoutAgent = logoutAgent;
     </script>
 </body>
 </html>
