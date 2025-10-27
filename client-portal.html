@@ -104,6 +104,85 @@
     <script src="script.js"></script>
     <script>
         // Funcionalidades específicas del portal de cliente
+        
+        function createClientTicketElement(ticket) {
+    const ticketDiv = document.createElement('div');
+    ticketDiv.className = 'ticket-item';
+    
+    let agentInfo = '';
+    if (ticket.agentId) {
+        const agent = agents.find(a => a.id === ticket.agentId);
+        if (agent) {
+            agentInfo = `
+                <div class="assigned-agent-info">
+                    <h4>🛠️ Agente Asignado</h4>
+                    <div class="agent-contact">
+                        <strong>${agent.name}</strong>
+                        ${agent.skills ? `<div class="agent-skills">${agent.skills}</div>` : ''}
+                        <div class="agent-contact-details">
+                            <span>📧 ${agent.email}</span>
+                            ${agent.phone ? `<span>📱 ${agent.phone}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    } else {
+        agentInfo = `
+            <div class="assigned-agent-info waiting">
+                <h4>⏳ Esperando asignación</h4>
+                <p>Tu ticket será asignado a un agente pronto</p>
+            </div>
+        `;
+    }
+    
+    // Mostrar resumen del chat
+    let chatSummary = '';
+    if (ticket.chatMessages && ticket.chatMessages.length > 0) {
+        const agentMessages = ticket.chatMessages.filter(msg => msg.type === 'agent_message').length;
+        const lastMessages = ticket.chatMessages.slice(-3).map(msg => `
+            <div class="client-chat-message ${msg.type === 'agent_message' ? 'agent' : 'system'}">
+                <strong>${msg.type === 'agent_message' ? '🛠️ Agente' : '📢 Sistema'}:</strong>
+                ${escapeHtml(msg.content.length > 100 ? msg.content.substring(0, 100) + '...' : msg.content)}
+            </div>
+        `).join('');
+        
+        chatSummary = `
+            <div class="client-chat-summary">
+                <h4>💬 Historial de Conversación</h4>
+                <div class="chat-messages-preview">
+                    ${lastMessages}
+                </div>
+                <small>${agentMessages} mensajes del agente • Última actualización: ${new Date(ticket.chatMessages[ticket.chatMessages.length-1].timestamp).toLocaleDateString()}</small>
+            </div>
+        `;
+    }
+    
+    ticketDiv.innerHTML = `
+        <div class="ticket-header">
+            <div>
+                <div class="ticket-subject">${escapeHtml(ticket.subject)}</div>
+                <div class="ticket-priority ${'priority-' + ticket.priority}">
+                    Prioridad: ${ticket.priority.charAt(0).toUpperCase() + ticket.priority.slice(1)}
+                </div>
+            </div>
+            <div class="ticket-agent-info">
+                <span class="ticket-status status-${ticket.status}">
+                    ${getStatusText(ticket.status)}
+                </span>
+            </div>
+        </div>
+        <p>${escapeHtml(ticket.description)}</p>
+        ${agentInfo}
+        ${chatSummary}
+        <div class="ticket-meta">
+            <small>Creado: ${new Date(ticket.createdAt).toLocaleDateString()}</small>
+            ${ticket.updates && ticket.updates.length > 0 ? 
+                `<small>Última actualización: ${new Date(ticket.updates[ticket.updates.length-1].timestamp).toLocaleDateString()}</small>` : ''}
+        </div>
+    `;
+    return ticketDiv;
+}
         let currentClient = null;
 
         function openTab(tabName) {
