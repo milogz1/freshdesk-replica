@@ -207,7 +207,119 @@
             document.getElementById('new-ticket-form').style.display = 'none';
             document.getElementById('client-ticket-form').reset();
         }
+        
+function renderClientTickets() {
+    if (!currentClient) {
+        console.log('No hay cliente actual');
+        return;
+    }
+    
+    const ticketsList = document.getElementById('client-tickets-list');
+    if (!ticketsList) {
+        console.error('No se encontró client-tickets-list');
+        return;
+    }
+    
+    // Recargar datos actualizados
+    tickets = JSON.parse(localStorage.getItem('tickets')) || [];
+    agents = JSON.parse(localStorage.getItem('agents')) || [];
+    
+    const clientTickets = tickets.filter(ticket => ticket.clientEmail === currentClient.email);
+    console.log('Tickets del cliente:', clientTickets);
+    
+    ticketsList.innerHTML = '';
+    
+    if (clientTickets.length === 0) {
+        ticketsList.innerHTML = '<p style="text-align: center; color: #7f8c8d; padding: 2rem;">No tienes tickets aún.</p>';
+        return;
+    }
+    
+    clientTickets.forEach(ticket => {
+        try {
+            const ticketElement = createClientTicketElement(ticket);
+            ticketsList.appendChild(ticketElement);
+        } catch (error) {
+            console.error('Error al renderizar ticket:', ticket, error);
+        }
+    });
+}
+        function updateClientMetrics() {
+    if (!currentClient) return;
+    
+    // Recargar datos actualizados
+    tickets = JSON.parse(localStorage.getItem('tickets')) || [];
+    
+    const clientTickets = tickets.filter(ticket => ticket.clientEmail === currentClient.email);
+    const metrics = {
+        open: clientTickets.filter(t => t.status === 'open').length,
+        progress: clientTickets.filter(t => t.status === 'progress').length,
+        resolved: clientTickets.filter(t => t.status === 'resolved').length
+    };
+    
+    console.log('Métricas del cliente:', metrics);
+    
+    const openElement = document.getElementById('client-open-tickets');
+    const progressElement = document.getElementById('client-progress-tickets');
+    const resolvedElement = document.getElementById('client-resolved-tickets');
+    
+    if (openElement) openElement.textContent = metrics.open;
+    if (progressElement) progressElement.textContent = metrics.progress;
+    if (resolvedElement) resolvedElement.textContent = metrics.resolved;
+}
+        // Funciones auxiliares para el portal del cliente
+function escapeHtml(unsafe) {
+    if (!unsafe) return '';
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 
+function getStatusText(status) {
+    const statusMap = {
+        'open': 'Abierto',
+        'progress': 'En Progreso',
+        'resolved': 'Resuelto'
+    };
+    return statusMap[status] || status;
+}
+
+function getClientTickets(clientEmail) {
+    return tickets.filter(ticket => ticket.clientEmail === clientEmail);
+}
+
+        document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔧 Inicializando portal del cliente...');
+    
+    // Cargar datos iniciales
+    tickets = JSON.parse(localStorage.getItem('tickets')) || [];
+    agents = JSON.parse(localStorage.getItem('agents')) || [];
+    clients = JSON.parse(localStorage.getItem('clients')) || [];
+    
+    // Verificar si ya hay un cliente logueado
+    const savedClient = localStorage.getItem('currentClient');
+    if (savedClient) {
+        try {
+            const client = JSON.parse(savedClient);
+            showClientDashboard(client);
+            console.log('Cliente recuperado:', client);
+        } catch (error) {
+            console.error('Error al recuperar cliente:', error);
+            localStorage.removeItem('currentClient');
+        }
+    }
+    
+    setupClientForms();
+});
+
+        <!-- Agrega esto temporalmente en el auth-section -->
+<div style="text-align: center; margin-top: 1rem;">
+    <button onclick="debugClientData()" class="btn-secondary" style="font-size: 0.8rem;">
+        🐛 Depurar Datos
+    </button>
+</div>
         // Inicializar portal de cliente
         document.addEventListener('DOMContentLoaded', function() {
             initializeClientPortal();
