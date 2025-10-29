@@ -123,6 +123,23 @@
         </div>
     </div>
 
+
+    <script>
+// Polyfill para localStorage en navegadores antiguos
+if (!window.localStorage) {
+    window.localStorage = {
+        getItem: function() { return null; },
+        setItem: function() {},
+        removeItem: function() {}
+    };
+}
+
+// Polyfill para funciones modernas de JavaScript
+if (!NodeList.prototype.forEach) {
+    NodeList.prototype.forEach = Array.prototype.forEach;
+}
+</script>
+    
     <script src="script.js"></script>
     <script>
         // Variables globales para el dashboard de agentes
