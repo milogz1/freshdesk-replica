@@ -69,6 +69,22 @@
         </div>
     </div>
 
+<script>
+// Polyfill para localStorage en navegadores antiguos
+if (!window.localStorage) {
+    window.localStorage = {
+        getItem: function() { return null; },
+        setItem: function() {},
+        removeItem: function() {}
+    };
+}
+
+// Polyfill para funciones modernas de JavaScript
+if (!NodeList.prototype.forEach) {
+    NodeList.prototype.forEach = Array.prototype.forEach;
+}
+</script>
+    
     <script>
         function redirectToClientPortal() {
             window.location.href = 'client-portal.html';
